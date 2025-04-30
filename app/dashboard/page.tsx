@@ -24,15 +24,6 @@ interface SessionWithProcedure {
     }
 }
 
-interface LogEntry {
-    id: string
-    session_id: string
-    teacher_id: string
-    result: any
-    created_at: string
-    srn: string
-}
-
 export default function DashboardPage() {
     const router = useRouter()
 
@@ -44,9 +35,6 @@ export default function DashboardPage() {
     const [logAvailability, setLogAvailability] = useState<{ [key: string]: boolean }>({})
     const [status, setStatus] = useState<string>('')
     const [mode, setMode] = useState<'practice' | 'evaluation'>('practice')
-
-    const [showModal, setShowModal] = useState(false)
-    const [selectedLog, setSelectedLog] = useState<LogEntry | null>(null)
 
     useEffect(() => {
         async function init() {
@@ -71,12 +59,13 @@ export default function DashboardPage() {
             const sessionData = sessionList || []
             setSessions(sessionData as SessionWithProcedure[])
 
+            // Check log existence using session_code to find session_id
             const logs: { [key: string]: boolean } = {}
-
             for (const s of sessionData) {
                 const isExpired = new Date(s.expires_at) <= new Date()
                 if (!isExpired) continue
 
+                // Step 1: Get session id using session_code
                 const { data: sessionRecord, error: sessionErr } = await supabase
                     .from('sessions')
                     .select('id')
@@ -88,8 +77,9 @@ export default function DashboardPage() {
                     continue
                 }
 
+                // Step 2: Use session id to check for logs
                 const { data: logData, error: logErr } = await supabase
-                    .from('logs')
+                    .from('session_logs')
                     .select('id')
                     .eq('session_id', sessionRecord.id)
                     .maybeSingle()
@@ -108,29 +98,84 @@ export default function DashboardPage() {
         router.push('/')
     }
 
-    const handleViewLogs = async (sessionCode: string) => {
-        setSelectedLog(null)
-        setShowModal(true)
+    const handleCreateSession = async () => {
+        if (!srn || !procedureId) {
+            setStatus('Please enter SRN & choose a procedure')
+            return
+        }
+        setStatus('Creating session...')
 
-        const { data: sessionRecord } = await supabase
-            .from('sessions')
-            .select('id')
-            .eq('session_code', sessionCode)
-            .maybeSingle()
+        const { data: student, error: studErr } = await supabase
+            .from('students')
+            .select('*')
+            .eq('srn', srn)
+            .single()
 
-        if (!sessionRecord) {
-            setSelectedLog(null)
+        if (studErr) {
+            const name = prompt('Student not found. Full name:')
+            if (!name) return setStatus('Cancelled')
+            const email = prompt('Student email:')
+            if (!email) return setStatus('Email required')
+            const { error: insertError } = await supabase
+                .from('students')
+                .insert([{ srn, name, email }])
+            if (insertError) return setStatus('Error: ' + insertError.message)
+        }
+
+        const selectedProc = procedures.find(p => p.id === procedureId)
+        if (!selectedProc) {
+            setStatus('Invalid procedure selected')
             return
         }
 
-        const { data: logEntry } = await supabase
-            .from('logs')
-            .select('*')
-            .eq('session_id', sessionRecord.id)
-            .maybeSingle()
+        const payload = {
+            package_name: selectedProc.package_name,
+            srn,
+            is_practice: mode === 'practice',
+            is_evaluation: mode === 'evaluation'
+        }
 
-        if (logEntry) {
-            setSelectedLog(logEntry as LogEntry)
+        const { data: sessionData, error: sessErr } = await supabase.auth.getSession()
+        const token = sessionData?.session?.access_token
+        if (sessErr || !token) {
+            console.error('Auth session error:', sessErr)
+            return setStatus('Authentication failed')
+        }
+
+        const res = await fetch(
+            `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/create-session`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            }
+        )
+
+        const result = await res.json()
+        if (res.ok) {
+            setStatus(`✅ Session created: ${result.session_code}`)
+            setSessions(prev => [
+                {
+                    id: result.id || result.session_code,
+                    session_code: result.session_code,
+                    srn,
+                    created_at: new Date().toISOString(),
+                    expires_at: result.expires_at,
+                    is_practice: payload.is_practice,
+                    is_evaluation: payload.is_evaluation,
+                    procedures: {
+                        procedure_name: selectedProc.procedure_name,
+                        package_name: selectedProc.package_name
+                    }
+                },
+                ...prev
+            ])
+        } else {
+            console.error('Create-session failed:', result)
+            setStatus('❌ ' + result.error)
         }
     }
 
@@ -138,13 +183,13 @@ export default function DashboardPage() {
         <>
             <style>
                 {`
-        @keyframes blink {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.3; }
-        }
-        .blink {
-          animation: blink 1s infinite;
-        }
+          @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+          }
+          .blink {
+            animation: blink 1s infinite;
+          }
         `}
             </style>
 
@@ -194,7 +239,7 @@ export default function DashboardPage() {
                         </div>
 
                         <button
-                            onClick={handleLogout}
+                            onClick={handleCreateSession}
                             className="w-full py-2 rounded bg-black text-white"
                         >
                             Create Session
@@ -207,7 +252,8 @@ export default function DashboardPage() {
                         <h2 className="text-lg font-medium mb-2">All Sessions</h2>
                         <ul className="divide-y divide-gray-200">
                             {sessions.map(s => {
-                                const isExpired = new Date(s.expires_at) <= new Date()
+                                const now = new Date()
+                                const isExpired = new Date(s.expires_at) <= now
                                 const sessionType = s.is_practice ? 'Practice' : s.is_evaluation ? 'Evaluation' : '—'
                                 return (
                                     <li key={s.id} className="py-3 flex justify-between items-start">
@@ -228,12 +274,7 @@ export default function DashboardPage() {
                                             <p>Exp: {new Date(s.expires_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</p>
                                             {isExpired ? (
                                                 logAvailability[s.session_code] ? (
-                                                    <button
-                                                        onClick={() => handleViewLogs(s.session_code)}
-                                                        className="text-blue-600 underline text-xs"
-                                                    >
-                                                        View Logs
-                                                    </button>
+                                                    <button className="text-blue-600 underline text-xs">View Logs</button>
                                                 ) : (
                                                     <p className="text-gray-400 text-xs">No logs exist</p>
                                                 )
@@ -248,29 +289,6 @@ export default function DashboardPage() {
                     </section>
                 </main>
             </div>
-
-            {/* Modal */}
-            {showModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 text-black">
-                    <div className="bg-white max-w-2xl w-full rounded-lg p-6 shadow-lg relative">
-                        <h3 className="text-lg font-semibold mb-4">Session Log</h3>
-                        <pre className="bg-gray-100 text-xs p-4 overflow-auto max-h-[400px] rounded whitespace-pre-wrap">
-              {selectedLog?.result
-                  ? JSON.stringify(selectedLog.result, null, 2)
-                  : 'Loading...'}
-            </pre>
-                        <button
-                            className="absolute top-2 right-3 text-gray-500 hover:text-black text-sm"
-                            onClick={() => {
-                                setShowModal(false)
-                                setSelectedLog(null)
-                            }}
-                        >
-                            ✕
-                        </button>
-                    </div>
-                </div>
-            )}
         </>
     )
 }
