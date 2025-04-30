@@ -46,9 +46,9 @@ export default function DashboardPage() {
             setTeacherName(user.user_metadata?.name || 'Teacher')
 
             const { data: procList } = await supabase
-                .from<Procedure>('procedures')
+                .from('procedures')
                 .select('id, procedure_name, package_name')
-            setProcedures(procList || [])
+            setProcedures((procList as Procedure[]) || [])
 
             const { data: sessionList } = await supabase
                 .from('sessions')
@@ -56,28 +56,25 @@ export default function DashboardPage() {
                 .eq('teacher_id', user.id)
                 .order('created_at', { ascending: false })
 
-            const sessionData = sessionList || []
-            setSessions(sessionData as SessionWithProcedure[])
+            const sessionData = (sessionList as SessionWithProcedure[]) || []
+            setSessions(sessionData)
 
-            // Check log existence using session_code to find session_id
             const logs: { [key: string]: boolean } = {}
             for (const s of sessionData) {
                 const isExpired = new Date(s.expires_at) <= new Date()
                 if (!isExpired) continue
 
-                // Step 1: Get session id using session_code
-                const { data: sessionRecord, error: sessionErr } = await supabase
+                const { data: sessionRecord } = await supabase
                     .from('sessions')
                     .select('id')
                     .eq('session_code', s.session_code)
                     .maybeSingle()
 
-                if (sessionErr || !sessionRecord) {
+                if (!sessionRecord) {
                     logs[s.session_code] = false
                     continue
                 }
 
-                // Step 2: Use session id to check for logs
                 const { data: logData, error: logErr } = await supabase
                     .from('session_logs')
                     .select('id')
