@@ -56,7 +56,10 @@ export default function DashboardPage() {
                 .eq('teacher_id', user.id)
                 .order('created_at', { ascending: false })
 
-            const sessionData = (sessionList as SessionWithProcedure[]) || []
+            const sessionData = (sessionList || []).map((s: any) => ({
+                ...s,
+                procedures: Array.isArray(s.procedures) ? s.procedures[0] : s.procedures
+            })) as SessionWithProcedure[]
             setSessions(sessionData)
 
             const logs: { [key: string]: boolean } = {}
