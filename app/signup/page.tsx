@@ -6,6 +6,8 @@ import { z } from 'zod'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import Image from 'next/image'
+import vrDoctorsImg from '@/public/building-logo.png' // Make sure this path is correct
 
 const schema = z.object({
     name: z.string().min(2, 'Display name is required'),
@@ -19,7 +21,9 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>
 
 export default function SignupPage() {
-    const { register, handleSubmit, formState: { errors } } = useForm<FormData>({ resolver: zodResolver(schema) })
+    const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
+        resolver: zodResolver(schema)
+    })
     const [status, setStatus] = useState('')
     const router = useRouter()
 
@@ -44,64 +48,77 @@ export default function SignupPage() {
     }
 
     return (
-        <main className="min-h-screen flex items-center justify-center bg-white text-gray-900">
-            <div className="w-full max-w-sm bg-white p-8 rounded-lg shadow-lg">
-                <h1 className="text-2xl font-semibold mb-6">Faculty Signup</h1>
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                    <div className="space-y-1">
+        <div className="flex h-screen w-screen">
+            {/* Left Panel with Image */}
+            <div className="w-1/2 relative bg-black">
+                <Image
+                    src={vrDoctorsImg}
+                    alt="Doctors using VR"
+                    layout="fill"
+                    objectFit="cover"
+                    className="rounded-r-none"
+                />
+                <div className="absolute top-6 left-6 text-white font-bold text-2xl tracking-wide">
+                    PESU Simulation Suit
+                </div>
+            </div>
+
+            {/* Right Panel with Signup Form */}
+            <div className="w-1/2 bg-black flex items-center justify-center">
+                <div className="bg-white p-8 sm:p-10 lg:p-12 rounded-3xl shadow-xl w-full max-w-sm sm:max-w-md lg:max-w-lg">
+                    <h1 className="text-3xl font-bold text-black mb-6 text-center">Faculty Signup</h1>
+                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
                         <input
                             {...register('name')}
                             placeholder="Full Name"
-                            className="w-full border-b border-gray-300 focus:outline-none py-2"
+                            className="w-full rounded-md bg-gray-200 p-3 text-black placeholder:text-gray-500 focus:outline-none"
                         />
                         {errors.name && (
                             <p className="text-xs text-red-500">{errors.name.message}</p>
                         )}
-                    </div>
 
-                    <div className="space-y-1">
                         <input
                             {...register('email')}
                             placeholder="PES Email"
-                            className="w-full border-b border-gray-300 focus:outline-none py-2"
+                            className="w-full rounded-md bg-gray-200 p-3 text-black placeholder:text-gray-500 focus:outline-none"
                         />
                         {errors.email && (
                             <p className="text-xs text-red-500">{errors.email.message}</p>
                         )}
-                    </div>
 
-                    <div className="space-y-1">
                         <input
                             type="password"
                             {...register('password')}
                             placeholder="Password"
-                            className="w-full border-b border-gray-300 focus:outline-none py-2"
+                            className="w-full rounded-md bg-gray-200 p-3 text-black placeholder:text-gray-500 focus:outline-none"
                         />
                         {errors.password && (
                             <p className="text-xs text-red-500">{errors.password.message}</p>
                         )}
-                    </div>
 
-                    <button
-                        type="submit"
-                        className="w-full py-2 rounded bg-black text-white"
-                    >
-                        Sign Up
-                    </button>
+                        <button
+                            type="submit"
+                            className="w-full rounded-full bg-orange-300 text-black font-bold py-2 text-lg hover:opacity-90 transition"
+                        >
+                            Sign Up
+                        </button>
 
-                    {status && <p className="text-xs text-red-500">{status}</p>}
-                </form>
+                        {status && (
+                            <p className="text-xs text-center text-gray-600 mt-2">{status}</p>
+                        )}
 
-                <p className="mt-6 text-center text-sm text-gray-600">
-                    Already have an account?{' '}
-                    <span
-                        onClick={() => router.push('/')}
-                        className="text-blue-600 hover:underline cursor-pointer"
-                    >
-                        Login here
-                    </span>
-                </p>
+                        <p className="text-sm text-center text-gray-600 mt-6">
+                            Already have an account?{' '}
+                            <span
+                                onClick={() => router.push('/')}
+                                className="text-blue-600 hover:underline cursor-pointer"
+                            >
+                Login here
+              </span>
+                        </p>
+                    </form>
+                </div>
             </div>
-        </main>
+        </div>
     )
 }
