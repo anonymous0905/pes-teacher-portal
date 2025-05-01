@@ -100,7 +100,7 @@ export default function LoginPage() {
                 </div>
 
                 <div className="absolute top-6 left-9 text-white font-bold text-2xl tracking-wide">
-                    PESU Simulation Suit
+                    PESU Simulation Suite
                 </div>
             </div>
 

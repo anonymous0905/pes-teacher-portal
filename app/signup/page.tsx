@@ -69,7 +69,7 @@ export default function SignupPage() {
                     className="rounded-r-none"
                 />
                 <div className="absolute top-6 left-6 text-white font-bold text-2xl tracking-wide">
-                    PESU Simulation Suit
+                    PESU Simulation Suite
                 </div>
             </div>
 
