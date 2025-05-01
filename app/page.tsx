@@ -3,11 +3,12 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import Image from 'next/image'
 import vrDoctorsImg from '@/public/login-side.png' // Replace with your actual path
+import { useRouter } from 'next/navigation'
+
 
 const schema = z.object({
     email: z.string().email(),
@@ -22,6 +23,16 @@ export default function LoginPage() {
     })
     const [status, setStatus] = useState('')
     const router = useRouter()
+
+    // ✅ Auth guard inside component
+    useEffect(() => {
+        (async () => {
+            const { data: { user }, error } = await supabase.auth.getUser()
+            if (user && !error) {
+                router.push('/dashboard')
+            }
+        })()
+    }, [router])
 
     const onSubmit = async (data: FormData) => {
         setStatus('Logging in...')
