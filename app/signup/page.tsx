@@ -46,7 +46,7 @@ export default function SignupPage() {
     return (
         <main className="min-h-screen flex items-center justify-center bg-white text-gray-900">
             <div className="w-full max-w-sm bg-white p-8 rounded-lg shadow-lg">
-                <h1 className="text-2xl font-semibold mb-6">Teacher Signup</h1>
+                <h1 className="text-2xl font-semibold mb-6">Faculty Signup</h1>
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                     <div className="space-y-1">
                         <input

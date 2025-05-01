@@ -41,7 +41,7 @@ export default function LoginPage() {
                 onSubmit={handleSubmit(onSubmit)}
                 className="w-full max-w-sm bg-white p-8 rounded-lg shadow-lg"
             >
-                <h1 className="text-center text-2xl font-medium mb-6 text-black">Teacher Login</h1>
+                <h1 className="text-center text-2xl font-medium mb-6 text-black">Faculty Login</h1>
 
                 <div className="mb-4">
                     <input
