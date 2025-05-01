@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "PESU Simulation Suit",
+  title: "PESU Simulation Suite",
   description: "Faculty Dashboard",
 };
 
