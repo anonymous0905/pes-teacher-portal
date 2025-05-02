@@ -100,46 +100,74 @@ export default function DashboardPage() {
     }
 
     const handleCreateSession = async () => {
-        if (!srn || !procedureId) return setStatus('Please enter SRN & choose a procedure')
-        setStatus('Creating session...')
+        if (!srn || !procedureId) return setStatus('Please enter SRN & choose a procedure');
+        setStatus('Creating session...');
 
-        const { data: student, error: studErr } = await supabase.from('students').select('*').eq('srn', srn).single()
+        const { data: student, error: studErr } = await supabase
+            .from('students')
+            .select('*')
+            .eq('srn', srn)
+            .single();
 
         if (studErr) {
-            const name = prompt('Student not found. Full name:')
-            if (!name) return setStatus('Cancelled')
-            const email = prompt('Student email:')
-            if (!email) return setStatus('Email required')
-            const { error: insertErr } = await supabase.from('students').insert([{ srn, name, email }])
-            if (insertErr) return setStatus('Error: ' + insertErr.message)
+            const name = prompt('Student not found. Full name:');
+            if (!name) return setStatus('Cancelled');
+            const email = prompt('Student email:');
+            if (!email) return setStatus('Email required');
+            const section = prompt('Student Section:');
+            if (!section) return setStatus('Section required');
+            const semester = prompt('Student Semester:');
+            if (!semester) return setStatus('Semester required');
+            const { error: insertErr } = await supabase
+                .from('students')
+                .insert([{ srn, name, email, section, semester }]);
+            if (insertErr) return setStatus('Error: ' + insertErr.message);
         }
 
-        const proc = procedures.find(p => p.id === procedureId)
-        if (!proc) return setStatus('Invalid procedure selected')
+        const proc = procedures.find(p => p.id === procedureId);
+        if (!proc) return setStatus('Invalid procedure selected');
 
         const payload = {
             package_name: proc.package_name,
             srn,
             is_practice: mode === 'practice',
-            is_evaluation: mode === 'evaluation'
-        }
+            is_evaluation: mode === 'evaluation',
+        };
 
-        const { data: sessionData, error: sessErr } = await supabase.auth.getSession()
-        const token = sessionData?.session?.access_token
-        if (sessErr || !token) return setStatus('Authentication failed')
+        const { data: sessionData, error: sessErr } = await supabase.auth.getSession();
+        const token = sessionData?.session?.access_token;
+        if (sessErr || !token) return setStatus('Authentication failed');
 
         const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/create-session`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`
+                Authorization: `Bearer ${token}`, // ✅ JWT for create-session
             },
-            body: JSON.stringify(payload)
-        })
-        const result = await res.json()
+            body: JSON.stringify(payload),
+        });
+
+        const result = await res.json();
 
         if (res.ok) {
-            setStatus(`✅ Session created: ${result.session_code}`)
+            setStatus(`✅ Session created: ${result.session_code}`);
+
+            // ✅ Send session code via email with same token
+            const emailRes = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/email-session`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`, // ✅ JWT for email-session
+                },
+                body: JSON.stringify({ sessionCode: result.session_code }),
+            });
+
+            const emailResult = await emailRes.json();
+            if (!emailRes.ok) {
+                console.error('Email sending failed:', emailResult);
+                setStatus(`⚠️ Session created, but email failed to send.`);
+            }
+
             setSessions(prev => [
                 {
                     id: result.id ?? result.session_code,
@@ -149,15 +177,19 @@ export default function DashboardPage() {
                     expires_at: result.expires_at,
                     is_practice: payload.is_practice,
                     is_evaluation: payload.is_evaluation,
-                    procedures: { procedure_name: proc.procedure_name, package_name: proc.package_name }
+                    procedures: {
+                        procedure_name: proc.procedure_name,
+                        package_name: proc.package_name,
+                    },
                 },
-                ...prev.slice(0, 19)
-            ])
+                ...prev.slice(0, 19),
+            ]);
         } else {
-            console.error('Create-session failed:', result)
-            setStatus('❌ ' + result.error)
+            console.error('Create-session failed:', result);
+            setStatus('❌ ' + result.error);
         }
-    }
+    };
+
 
     return (
         <>
