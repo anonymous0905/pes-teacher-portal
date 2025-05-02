@@ -8,6 +8,7 @@ import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import logo from '@/public/cave-logo.png'
 import graphBg from '@/public/building-logo.png'
+import nav from '@/public/nav-logo.png'
 import headerWave from '@/public/header-removebg-preview.png'
 
 const LineChart = dynamic(() => import('./LineChart'), { ssr: false })
@@ -162,10 +163,14 @@ export default function DashboardPage() {
         <>
             <style>{`@keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}.blink{animation:blink 1s infinite;}`}</style>
 
+            {/* Nav Image fixed to bottom-left */}
+            <Image src={nav} alt="nav" width={250} height={900} className="fixed bottom-0 left-0 z-40" />
+
             <div className="flex min-h-screen text-white bg-[#1a1a1a]">
-                <aside className="w-64 bg-black p-6 flex flex-col justify-between">
+                {/* Sidebar fixed */}
+                <aside className="w-64 bg-black p-6 flex flex-col justify-between fixed top-0 left-0 h-full z-30">
                     <div>
-                        <Image src={logo} alt="Logo" width={80} height={80} className="mb-8" />
+                        <Image src={logo} alt="Logo" width={80} height={80} className="mb-8 " />
                         <nav className="space-y-4 text-xl">
                             <button onClick={() => router.push('/dashboard')} className="text-left w-full font-bold underline">Dashboard</button>
                             <button onClick={() => router.push('/sessions')} className="text-left w-full">Sessions</button>
@@ -173,10 +178,10 @@ export default function DashboardPage() {
                         </nav>
                         <button onClick={handleLogout} className="text-left text-lg mt-10">Logout</button>
                     </div>
-
                 </aside>
 
-                <main className="flex-1 p-10 space-y-10 relative">
+                {/* Main with left padding for fixed sidebar */}
+                <main className="flex-1 p-10 space-y-10 relative ml-64">
                     <Image src={headerWave} alt="Header Wave" className="absolute top-0 right-0 w-1/3 opacity-20" />
                     <h2 className="text-3xl font-bold">Welcome, {teacherName}</h2>
 
@@ -260,8 +265,8 @@ export default function DashboardPage() {
                     <div className="bg-white text-black p-6 rounded-lg max-w-2xl w-full relative">
                         <h3 className="text-lg font-bold mb-4">Session Log</h3>
                         <pre className="bg-gray-100 text-xs p-4 max-h-[400px] overflow-auto rounded whitespace-pre-wrap">
-              {selectedLog?.result ? JSON.stringify(selectedLog.result, null, 2) : 'Loading...'}
-            </pre>
+                            {selectedLog?.result ? JSON.stringify(selectedLog.result, null, 2) : 'Loading...'}
+                        </pre>
                         <button className="absolute top-2 right-3 text-gray-600 hover:text-black" onClick={() => { setShowModal(false); setSelectedLog(null) }}>
                             ✕
                         </button>
