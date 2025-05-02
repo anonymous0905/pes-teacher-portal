@@ -8,7 +8,7 @@ import nav from '@/public/nav-logo.png'
 import logo from '@/public/cave-logo.png'
 import headerWave from '@/public/header-removebg-preview.png'
 
-interface Session {
+interface SessionWithProcedure {
     id: string
     session_code: string
     srn: string
@@ -17,6 +17,7 @@ interface Session {
     is_evaluation: boolean
     procedures: {
         procedure_name: string
+        package_name: string
     }
 }
 
@@ -29,12 +30,14 @@ export default function SessionsPage() {
     const [semester, setSemester] = useState('')
     const [section, setSection] = useState('')
     const [sections, setSections] = useState<string[]>([])
-    const [sessions, setSessions] = useState<Session[]>([])
+    const [sessions, setSessions] = useState<SessionWithProcedure[]>([])
     const [students, setStudents] = useState<{ srn: string; name: string }[]>([])
     const [srnFilter, setSrnFilter] = useState('')
     const [nameFilter, setNameFilter] = useState('')
     const [sessionCodeFilter, setSessionCodeFilter] = useState('')
-    const [modeFilter, setModeFilter] = useState('all') // ✅ New for Mode Filter
+    const [modeFilter, setModeFilter] = useState('all')
+    const [procedureFilter, setProcedureFilter] = useState('')
+    const [dateFilter, setDateFilter] = useState('')
     const [loading, setLoading] = useState(false)
     const [logData, setLogData] = useState<any | null>(null)
     const [modalOpen, setModalOpen] = useState(false)
@@ -67,6 +70,7 @@ export default function SessionsPage() {
 
         const fetchSessionsAndStudents = async () => {
             setLoading(true)
+
             const { data: studentsData, error: studErr } = await supabase
                 .from('students')
                 .select('srn, name')
@@ -85,18 +89,34 @@ export default function SessionsPage() {
 
             const { data: sessionData, error: sessErr } = await supabase
                 .from('sessions')
-                .select('id, session_code, srn, expires_at, is_practice, is_evaluation, procedures(procedure_name)')
+                .select(`
+          id,
+          session_code,
+          srn,
+          expires_at,
+          is_practice,
+          is_evaluation,
+          procedures (
+            procedure_name,
+            package_name
+          )
+        `)
                 .in('srn', srns)
                 .order('expires_at', { ascending: false })
 
-            if (sessErr) {
+            if (sessErr || !sessionData) {
                 console.error('Failed to fetch sessions:', sessErr)
                 setSessions([])
             } else {
-                setSessions(sessionData as Session[])
+                const normalized = sessionData.map((s: any) => ({
+                    ...s,
+                    procedures: Array.isArray(s.procedures) ? s.procedures[0] : s.procedures
+                })) as SessionWithProcedure[]
+
+                setSessions(normalized)
 
                 const logChecks = await Promise.all(
-                    (sessionData as Session[]).map(async (s) => {
+                    normalized.map(async (s: SessionWithProcedure) => {
                         const { data } = await supabase
                             .from('logs')
                             .select('id')
@@ -117,26 +137,25 @@ export default function SessionsPage() {
 
     const filteredSessions = sessions.filter(s => {
         const student = students.find(stu => stu.srn === s.srn)
-
         const modeMatch =
             modeFilter === 'all' ||
             (modeFilter === 'practice' && s.is_practice) ||
             (modeFilter === 'evaluation' && s.is_evaluation)
 
+        const procedureMatch = !procedureFilter || s.procedures?.procedure_name?.toLowerCase().includes(procedureFilter.toLowerCase())
+        const dateMatch = !dateFilter || new Date(s.expires_at).toISOString().slice(0, 10) === dateFilter
+
         return (
             (!srnFilter || s.srn.includes(srnFilter)) &&
             (!nameFilter || student?.name.toLowerCase().includes(nameFilter.toLowerCase())) &&
             (!sessionCodeFilter || s.session_code.toLowerCase().includes(sessionCodeFilter.toLowerCase())) &&
-            modeMatch
+            modeMatch &&
+            procedureMatch &&
+            dateMatch
         )
     })
 
-    const handleLogout = async () => {
-        await supabase.auth.signOut()
-        router.push('/')
-    }
-
-    const getStatus = (s: Session) => {
+    const getStatus = (s: SessionWithProcedure) => {
         const now = new Date()
         const expiry = new Date(s.expires_at)
         const hasLog = logAvailability[s.id] ?? false
@@ -154,6 +173,11 @@ export default function SessionsPage() {
             .eq('session_id', sessionId)
             .maybeSingle<LogRow>()
         setLogData(error ? { result: { error: error.message } } : logRow)
+    }
+
+    const handleLogout = async () => {
+        await supabase.auth.signOut()
+        router.push('/')
     }
 
     return (
@@ -207,12 +231,20 @@ export default function SessionsPage() {
                             <input value={sessionCodeFilter} onChange={(e) => setSessionCodeFilter(e.target.value)} className="w-full p-2 rounded bg-gray-800 border border-gray-600" placeholder="Enter Code" />
                         </div>
                         <div>
-                            <label className="block mb-1">Mode</label> {/* ✅ New Filter */}
+                            <label className="block mb-1">Mode</label>
                             <select value={modeFilter} onChange={(e) => setModeFilter(e.target.value)} className="w-full p-2 rounded bg-gray-800 border border-gray-600">
                                 <option value="all">All</option>
                                 <option value="practice">Practice</option>
                                 <option value="evaluation">Evaluation</option>
                             </select>
+                        </div>
+                        <div>
+                            <label className="block mb-1">Procedure</label>
+                            <input value={procedureFilter} onChange={(e) => setProcedureFilter(e.target.value)} className="w-full p-2 rounded bg-gray-800 border border-gray-600" placeholder="Enter procedure" />
+                        </div>
+                        <div>
+                            <label className="block mb-1">Date</label>
+                            <input type="date" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} className="w-full p-2 rounded bg-gray-800 border border-gray-600" />
                         </div>
                     </div>
 
@@ -259,8 +291,8 @@ export default function SessionsPage() {
                         <button onClick={() => setModalOpen(false)} className="absolute top-2 right-2 text-gray-400 hover:text-white">✖</button>
                         <h2 className="text-xl font-semibold mb-4">Session Logs</h2>
                         <pre className="bg-gray-100 text-xs p-4 max-h-[400px] overflow-auto rounded whitespace-pre-wrap">
-                            {JSON.stringify(logData?.result ?? 'No logs available.', null, 2)}
-                        </pre>
+              {JSON.stringify(logData?.result ?? 'No logs available.', null, 2)}
+            </pre>
                     </div>
                 </div>
             )}
