@@ -196,7 +196,7 @@ export default function DashboardPage() {
             <style>{`@keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}.blink{animation:blink 1s infinite;}`}</style>
 
             {/* Nav Image fixed to bottom-left */}
-            <Image src={nav} alt="nav" width={250} height={900} className="fixed bottom-0 left-0 z-40" />
+            <Image src={nav} alt="nav" width={250} height={900} className="fixed bottom-0 left-0 z-40 pointer-events-none" />
 
             <div className="flex min-h-screen text-white bg-[#1a1a1a]">
                 {/* Sidebar fixed */}
@@ -206,7 +206,8 @@ export default function DashboardPage() {
                         <nav className="space-y-4 text-xl">
                             <button onClick={() => router.push('/dashboard')} className="text-left w-full font-bold underline">Dashboard</button>
                             <button onClick={() => router.push('/sessions')} className="text-left w-full">Sessions</button>
-                            <button onClick={() => router.push('/students')} className="text-left w-full">Student Records</button>
+                            <button onClick={() => router.push('/classcreate')} className="text-left w-full">Bulk Creation</button>
+                            <button onClick={() => router.push('/analytics')} className="text-left w-full">Analytics</button>
                         </nav>
                         <button onClick={handleLogout} className="text-left text-lg mt-10">Logout</button>
                     </div>
@@ -214,7 +215,7 @@ export default function DashboardPage() {
 
                 {/* Main with left padding for fixed sidebar */}
                 <main className="flex-1 p-10 space-y-10 relative ml-64">
-                    <Image src={headerWave} alt="Header Wave" className="absolute top-0 right-0 w-1/3 opacity-20" />
+                    <Image src={headerWave} alt="Header Wave" className="absolute top-0 right-0 w-1/3 opacity-20 pointer-events-none" />
                     <h2 className="text-3xl font-bold">Welcome, {teacherName}</h2>
 
                     <div className="flex gap-10">
