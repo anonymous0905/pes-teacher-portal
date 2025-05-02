@@ -206,7 +206,8 @@ export default function DashboardPage() {
                         <nav className="space-y-4 text-xl">
                             <button onClick={() => router.push('/dashboard')} className="text-left w-full font-bold underline">Dashboard</button>
                             <button onClick={() => router.push('/sessions')} className="text-left w-full">Sessions</button>
-                            <button onClick={() => router.push('/students')} className="text-left w-full">Student Records</button>
+                            <button onClick={() => router.push('/classcreate')} className="text-left w-full">Bulk Creation</button>
+                            <button onClick={() => router.push('/analytics')} className="text-left w-full">Analytics</button>
                         </nav>
                         <button onClick={handleLogout} className="text-left text-lg mt-10">Logout</button>
                     </div>

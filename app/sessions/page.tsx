@@ -43,6 +43,14 @@ export default function SessionsPage() {
     const [modalOpen, setModalOpen] = useState(false)
     const [logAvailability, setLogAvailability] = useState<{ [key: string]: boolean }>({})
 
+
+    useEffect(() => {
+        (async () => {
+            const { data: { user }, error: userErr } = await supabase.auth.getUser()
+            if (userErr || !user) { router.push('/'); return }
+        })()
+    }, [router])
+
     useEffect(() => {
         if (!semester) {
             setSections([])
@@ -193,7 +201,8 @@ export default function SessionsPage() {
                         <nav className="space-y-4 text-xl">
                             <button onClick={() => router.push('/dashboard')} className="text-left w-full">Dashboard</button>
                             <button onClick={() => router.push('/sessions')} className="text-left w-full font-bold underline">Sessions</button>
-                            <button onClick={() => router.push('/students')} className="text-left w-full">Student Records</button>
+                            <button onClick={() => router.push('/classcreate')} className="text-left w-full">Bulk Creation</button>
+                            <button onClick={() => router.push('/analytics')} className="text-left w-full">Analytics</button>
                         </nav>
                         <button onClick={handleLogout} className="text-left text-lg mt-10">Logout</button>
                     </div>
