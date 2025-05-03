@@ -58,7 +58,7 @@ export default function SignupPage() {
     }
 
     return (
-        <div className="flex h-screen w-screen">
+        <div className="flex h-screen w-screen pointer-events-none">
             {/* Left Panel with Image */}
             <div className="w-1/2 relative" style={{ backgroundColor: '#1b1b1b' }}>
                 <Image
