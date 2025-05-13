@@ -35,6 +35,18 @@ export default function ClassAnalyticsPage() {
     const [modalTitle, setModalTitle] = useState('')
     const [isStudentView, setIsStudentView] = useState(false)
 
+    const [teacherName, setTeacherName] = useState('')
+
+    useEffect(() => {
+        (async () => {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (!user) router.push('/')
+            else setTeacherName(user.user_metadata?.name || 'Unknown Teacher')
+        })()
+    }, [])
+
+
+
     useEffect(() => {
         (async () => {
             const { data: { user } } = await supabase.auth.getUser()
@@ -213,6 +225,82 @@ export default function ClassAnalyticsPage() {
         )
     }
 
+    const [emailToSend, setEmailToSend] = useState('')
+
+    const handleDownloadPDF = async () => {
+        const content = document.getElementById('analytics-content')
+        if (!content) return alert('Content not found')
+
+        const html2pdf = (await import('html2pdf.js')).default
+        const cloned = content.cloneNode(true) as HTMLElement
+        cloned.style.backgroundColor = '#ffffff'
+        cloned.style.color = '#000000'
+        cloned.style.padding = '20px'
+        cloned.style.width = '800px'
+
+        html2pdf().set({
+            margin: 0.5,
+            filename: `${modalTitle}.pdf`,
+            html2canvas: { scale: 2 },
+            jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+        }).from(cloned).save()
+    }
+
+
+    const handleEmailAnalytics = async () => {
+        if (!emailToSend) return alert('Enter a valid email');
+        const token = (await supabase.auth.getSession()).data.session?.access_token;
+        const content = document.getElementById('analytics-content');
+        if (!content) return alert('Content not found');
+
+        const html2pdf = (await import('html2pdf.js')).default;
+
+        const cloned = content.cloneNode(true) as HTMLElement;
+        cloned.style.backgroundColor = '#ffffff';
+        cloned.style.color = '#000000';
+        cloned.style.padding = '20px';
+        cloned.style.width = '800px';
+
+        const opt = {
+            margin: 0.5,
+            filename: `${modalTitle}.pdf`,
+            html2canvas: { scale: 2 },
+            jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+        };
+
+        // Generate PDF as Blob
+        const blob = await html2pdf().from(cloned).set(opt).outputPdf('blob');
+        const base64 = await blobToBase64(blob);
+
+        const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/email-analytics`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+                email: emailToSend,
+                subject: modalTitle,
+                pdfBase64: base64,
+                filename: `${modalTitle}.pdf`
+            }),
+        });
+
+        const result = await response.json();
+        if (response.ok) alert('Email sent successfully!');
+        else alert(`Failed to send email: ${result.error}`);
+    };
+
+    const blobToBase64 = (blob: Blob): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+    };
+
+
     return (
         <>
             <Image src={nav} alt="nav" width={250} height={900} className="fixed bottom-0 left-0 z-40 pointer-events-none" />
@@ -279,8 +367,26 @@ export default function ClassAnalyticsPage() {
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                     <div className="bg-white text-black p-6 rounded-lg max-w-4xl w-full relative">
                         <h3 className="text-lg font-bold mb-4">{modalTitle}</h3>
-                        {isStudentView ? renderStudentGraphs() : renderClassAnalytics()}
-                        <button className="absolute top-2 right-3 text-gray-600 hover:text-black" onClick={() => { setShowModal(false); setModalContent(null) }}>✕</button>
+                        <div id="analytics-content" className="bg-white text-black p-4 rounded shadow">
+                            <div className="mb-4 text-sm">
+                                <p><strong>Teacher:</strong> {teacherName}</p>
+                                {isStudentView ? (
+                                    <p><strong>Student SRN:</strong> {modalTitle.replace('Analytics - ', '')}</p>
+                                ) : (
+                                    <>
+                                        <p><strong>Class:</strong> {semester}</p>
+                                        <p><strong>Section:</strong> {section}</p>
+                                    </>
+                                )}
+                            </div>
+                            {isStudentView ? renderStudentGraphs() : renderClassAnalytics()}
+                        </div>
+                        <div className="flex gap-2 mt-6">
+                            <button onClick={handleDownloadPDF} className="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-900">Download PDF</button>
+                            <input type="email" placeholder="Enter email" value={emailToSend} onChange={(e) => setEmailToSend(e.target.value)} className="border border-gray-400 p-2 rounded text-sm" />
+                            <button onClick={handleEmailAnalytics} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Email Report</button>
+                        </div>
+                        <button className="absolute top-2 right-3 text-gray-600 hover:text-black" onClick={() => { setShowModal(false); setModalContent(null); setEmailToSend('') }}>✕</button>
                     </div>
                 </div>
             )}
