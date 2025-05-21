@@ -7,7 +7,21 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import nav from '@/public/nav-logo.png'
 import logo from '@/public/cave-logo.png'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid, Legend } from 'recharts'
+//import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid, Legend } from 'recharts'
+import {
+    ComposedChart,
+    Bar,
+    Line,
+    XAxis,
+    YAxis,
+    Tooltip,
+    ResponsiveContainer,
+    CartesianGrid,
+    Legend,
+    BarChart,
+    LineChart
+} from 'recharts'
+
 
 interface Student {
     srn: string
@@ -131,48 +145,85 @@ export default function ClassAnalyticsPage() {
     }
 
     const renderStudentGraphs = () => {
-        if (!modalContent) return null
-        const practiceData = modalContent.practice?.scores?.map((score: number, i: number) => ({ session: i + 1, score, time: modalContent.practice.total_times[i] })) || []
-        const evaluationData = modalContent.evaluation?.scores?.map((score: number, i: number) => ({ session: i + 1, score, time: modalContent.evaluation.total_times[i] })) || []
+        if (!modalContent) return null;
+
+        const toData = (arr: number[]) => arr?.map((value, i) => ({ session: i + 1, value })) || [];
+
+        const practiceScoresData = toData(modalContent.practice?.scores);
+        const practiceTimeData = toData(modalContent.practice?.total_times);
+        const evaluationScoresData = toData(modalContent.evaluation?.scores);
+        const evaluationTimeData = toData(modalContent.evaluation?.total_times);
+
         const missedSteps = Array.isArray(modalContent.practice?.top_missed_steps)
-            ? modalContent.practice.top_missed_steps.map((s: any) => typeof s === 'string' ? { step: s, count: 1 } : s)
-            : []
+            ? modalContent.practice.top_missed_steps.map((s: any) =>
+                typeof s === 'string' ? { step: s, count: 1 } : s
+            )
+            : [];
+
         return (
-            <div className="space-y-6">
-                <div>
-                    <h4 className="font-semibold mb-2">Practice Sessions</h4>
-                    <ResponsiveContainer width="100%" height={200}>
-                        <LineChart data={practiceData}>
+            <div className="space-y-6 pr-2">
+                <div className="space-y-3">
+                    <h4 className="font-semibold">Practice Scores</h4>
+                    <ResponsiveContainer width="100%" height={150}>
+                        <BarChart data={practiceScoresData}>
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis dataKey="session" />
                             <YAxis />
                             <Tooltip />
                             <Legend />
-                            <Line type="monotone" dataKey="score" stroke="#8884d8" />
-                            <Line type="monotone" dataKey="time" stroke="#82ca9d" />
-                        </LineChart>
+                            <Bar dataKey="value" name="Score" fill="#8884d8" />
+                        </BarChart>
                     </ResponsiveContainer>
                 </div>
-                <div>
-                    <h4 className="font-semibold mb-2">Evaluation Sessions</h4>
-                    <ResponsiveContainer width="100%" height={200}>
-                        <LineChart data={evaluationData}>
+
+                <div className="space-y-3">
+                    <h4 className="font-semibold">Practice Time (s)</h4>
+                    <ResponsiveContainer width="100%" height={150}>
+                        <LineChart data={practiceTimeData}>
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis dataKey="session" />
                             <YAxis />
                             <Tooltip />
                             <Legend />
-                            <Line type="monotone" dataKey="score" stroke="#8884d8" />
-                            <Line type="monotone" dataKey="time" stroke="#82ca9d" />
+                            <Line type="monotone" dataKey="value" name="Time" stroke="#82ca9d" />
                         </LineChart>
                     </ResponsiveContainer>
                 </div>
+
+                <div className="space-y-3">
+                    <h4 className="font-semibold">Evaluation Scores</h4>
+                    <ResponsiveContainer width="100%" height={150}>
+                        <BarChart data={evaluationScoresData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="session" />
+                            <YAxis />
+                            <Tooltip />
+                            <Legend />
+                            <Bar dataKey="value" name="Score" fill="#ffc658" />
+                        </BarChart>
+                    </ResponsiveContainer>
+                </div>
+
+                <div className="space-y-3">
+                    <h4 className="font-semibold">Evaluation Time (s)</h4>
+                    <ResponsiveContainer width="100%" height={150}>
+                        <LineChart data={evaluationTimeData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="session" />
+                            <YAxis />
+                            <Tooltip />
+                            <Legend />
+                            <Line type="monotone" dataKey="value" name="Time" stroke="#ff7300" />
+                        </LineChart>
+                    </ResponsiveContainer>
+                </div>
+
                 {missedSteps.length > 0 && (
                     <div>
                         <h4 className="font-semibold mb-2">Most Missed Steps</h4>
-                        <ResponsiveContainer width="100%" height={200}>
+                        <ResponsiveContainer width="100%" height={150}>
                             <BarChart data={missedSteps}>
-                                <XAxis dataKey="step" interval={0} angle={-20} textAnchor="end" height={100} />
+                                <XAxis dataKey="step" interval={0} angle={-20} textAnchor="end" height={80} />
                                 <YAxis />
                                 <Tooltip />
                                 <Bar dataKey="count" fill="#ff6347" />
@@ -181,49 +232,90 @@ export default function ClassAnalyticsPage() {
                     </div>
                 )}
             </div>
-        )
-    }
+        );
+    };
+
+
 
     const renderClassAnalytics = () => {
-        if (!modalContent) return null
-        const { practice, evaluation } = modalContent
+        if (!modalContent) return null;
+        const { practice, evaluation } = modalContent;
+
         return (
-            <div className="space-y-6 text-sm">
+            <div className="space-y-6 pr-2">
+                {/* Practice Stats Summary */}
                 <div>
-                    <h4 className="font-semibold text-base mb-2">Practice Stats</h4>
-                    <ul className="space-y-1">
-                        <li><strong>Average Score:</strong> {practice?.average_score ?? 'N/A'}</li>
-                        <li><strong>Average Time:</strong> {practice?.average_time_sec?.toFixed(2) ?? 'N/A'} seconds</li>
-                        <li><strong>Total Sessions:</strong> {practice?.total_sessions}</li>
-                    </ul>
+                    <h4 className="font-semibold text-base mb-2">Practice Summary</h4>
+                    <div className="grid grid-cols-2 text-sm gap-2">
+                        <div><strong>Avg Score:</strong> {practice?.average_score ?? 'N/A'}</div>
+                        <div><strong>Avg Time:</strong> {practice?.average_time_sec?.toFixed(2) ?? 'N/A'} sec</div>
+                        <div><strong>Total Sessions:</strong> {practice?.total_sessions ?? 0}</div>
+                    </div>
                 </div>
+
+                {/* Evaluation Stats Summary */}
                 <div>
-                    <h4 className="font-semibold text-base mb-2">Evaluation Stats</h4>
-                    <ul className="space-y-1">
-                        <li><strong>Average Score:</strong> {evaluation?.average_score ?? 'N/A'}</li>
-                        <li><strong>Average Time:</strong> {evaluation?.average_time_sec?.toFixed(2) ?? 'N/A'} seconds</li>
-                        <li><strong>Total Sessions:</strong> {evaluation?.total_sessions}</li>
-                    </ul>
+                    <h4 className="font-semibold text-base mb-2">Evaluation Summary</h4>
+                    <div className="grid grid-cols-2 text-sm gap-2">
+                        <div><strong>Avg Score:</strong> {evaluation?.average_score ?? 'N/A'}</div>
+                        <div><strong>Avg Time:</strong> {evaluation?.average_time_sec?.toFixed(2) ?? 'N/A'} sec</div>
+                        <div><strong>Total Sessions:</strong> {evaluation?.total_sessions ?? 0}</div>
+                    </div>
                 </div>
-                <div>
-                    <h4 className="font-semibold text-base mb-2">Top Missed Steps</h4>
-                    <ul className="list-disc list-inside">
-                        {(practice?.top_missed_steps ?? []).map((step: any, idx: number) => (
-                            <li key={idx}>{step.step} — {step.count} times</li>
-                        ))}
-                    </ul>
-                </div>
-                <div>
-                    <h4 className="font-semibold text-base mb-2">Lagging Students</h4>
-                    <ul className="list-disc list-inside">
-                        {(practice?.lagging_students ?? []).map((s: any, idx: number) => (
-                            <li key={idx}>{s.srn} - {s.sessions} sessions, Avg Score: {s.avgScore}, Avg Time: {s.avgTime.toFixed(2)}s</li>
-                        ))}
-                    </ul>
-                </div>
+
+                {/* Lagging Students Table */}
+                {(practice?.lagging_students?.length > 0 || evaluation?.lagging_students?.length > 0) && (
+                    <div>
+                        <h4 className="font-semibold text-base mb-2">Underperforming Students</h4>
+                        <table className="w-full table-auto text-sm bg-gray-100 text-black rounded overflow-hidden">
+                            <thead className="bg-gray-300">
+                            <tr>
+                                <th className="p-2">SRN</th>
+                                <th className="p-2">Type</th>
+                                <th className="p-2">Avg Score</th>
+                                <th className="p-2">Avg Time (s)</th>
+                                <th className="p-2">Sessions</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {(practice?.lagging_students || []).map((s: any, i: number) => (
+                                <tr key={`practice-${i}`} className="odd:bg-white even:bg-gray-200">
+                                    <td className="p-2">{s.srn}</td>
+                                    <td className="p-2">Practice</td>
+                                    <td className="p-2">{s.avgScore}</td>
+                                    <td className="p-2">{s.avgTime.toFixed(2)}</td>
+                                    <td className="p-2">{s.sessions}</td>
+                                </tr>
+                            ))}
+                            {(evaluation?.lagging_students || []).map((s: any, i: number) => (
+                                <tr key={`evaluation-${i}`} className="odd:bg-white even:bg-gray-200">
+                                    <td className="p-2">{s.srn}</td>
+                                    <td className="p-2">Evaluation</td>
+                                    <td className="p-2">{s.avgScore}</td>
+                                    <td className="p-2">{s.avgTime.toFixed(2)}</td>
+                                    <td className="p-2">{s.sessions}</td>
+                                </tr>
+                            ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+
+                {/* Top Missed Steps */}
+                {(practice?.top_missed_steps?.length > 0 || evaluation?.top_missed_steps?.length > 0) && (
+                    <div>
+                        <h4 className="font-semibold text-base mb-2">Top Missed Steps</h4>
+                        <ul className="list-disc list-inside text-sm">
+                            {[...(practice?.top_missed_steps ?? []), ...(evaluation?.top_missed_steps ?? [])].map((step: any, idx: number) => (
+                                <li key={idx}>{step.step} — {step.count} times</li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
             </div>
-        )
-    }
+        );
+    };
+
 
     const [emailToSend, setEmailToSend] = useState('')
 
@@ -367,9 +459,10 @@ export default function ClassAnalyticsPage() {
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                     <div className="bg-white text-black p-6 rounded-lg max-w-4xl w-full relative">
                         <h3 className="text-lg font-bold mb-4">{modalTitle}</h3>
-                        <div id="analytics-content" className="bg-white text-black p-4 rounded shadow">
+                        <div id="analytics-content" className="bg-white text-black p-4 rounded shadow max-h-[70vh] overflow-y-auto">
                             <div className="mb-4 text-sm">
                                 <p><strong>Teacher:</strong> {teacherName}</p>
+                                <p><strong>Procedure:</strong> {modalContent?.procedure_name ?? 'N/A'}</p>
                                 {isStudentView ? (
                                     <p><strong>Student SRN:</strong> {modalTitle.replace('Analytics - ', '')}</p>
                                 ) : (
@@ -379,6 +472,7 @@ export default function ClassAnalyticsPage() {
                                     </>
                                 )}
                             </div>
+
                             {isStudentView ? renderStudentGraphs() : renderClassAnalytics()}
                         </div>
                         <div className="flex gap-2 mt-6">
