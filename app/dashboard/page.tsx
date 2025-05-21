@@ -1,7 +1,7 @@
 // Complete DashboardPage.tsx
 'use client'
 
-import { useEffect, useState } from 'react'
+import {JSX, useEffect, useState} from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import dynamic from 'next/dynamic'
@@ -82,6 +82,36 @@ export default function DashboardPage() {
             setLogAvailability(logs)
         })()
     }, [router])
+
+    const renderFormattedLog = (data: any): JSX.Element => {
+        if (data === null || data === undefined) return <span className="text-gray-400 italic">null</span>;
+
+        if (typeof data === 'object') {
+            if (Array.isArray(data)) {
+                return (
+                    <div className="space-y-4">
+                        {data.map((item, idx) => (
+                            <div key={idx} className="border-t border-gray-200 pt-2">
+                                {renderFormattedLog(item)}
+                            </div>
+                        ))}
+                    </div>
+                );
+            }
+
+            return (
+                <div className="space-y-1">
+                    {Object.entries(data).map(([key, value], idx) => (
+                        <div key={idx} className="text-sm text-gray-800">
+                            <span className="font-semibold text-gray-700">{key}</span>: {renderFormattedLog(value)}
+                        </div>
+                    ))}
+                </div>
+            );
+        }
+
+        return <span className="text-sm text-gray-800">{String(data)}</span>;
+    };
 
     const handleViewLogs = async (sessionId: string) => {
         setShowModal(true)
@@ -191,6 +221,8 @@ export default function DashboardPage() {
     };
 
 
+
+
     return (
         <>
             <style>{`@keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}.blink{animation:blink 1s infinite;}`}</style>
@@ -295,13 +327,23 @@ export default function DashboardPage() {
 
             {showModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white text-black p-6 rounded-lg max-w-2xl w-full relative">
-                        <h3 className="text-lg font-bold mb-4">Session Log</h3>
-                        <pre className="bg-gray-100 text-xs p-4 max-h-[400px] overflow-auto rounded whitespace-pre-wrap">
-                            {selectedLog?.result ? JSON.stringify(selectedLog.result, null, 2) : 'Loading...'}
-                        </pre>
-                        <button className="absolute top-2 right-3 text-gray-600 hover:text-black" onClick={() => { setShowModal(false); setSelectedLog(null) }}>
-                            ✕
+                    <div className="bg-white text-black p-6 rounded-2xl max-w-3xl w-full shadow-xl relative">
+                        <h3 className="text-xl font-semibold mb-4 border-b pb-2">Session Log</h3>
+
+                        <div className="bg-white text-sm p-2 max-h-[400px] overflow-auto space-y-2">
+                            {selectedLog?.result
+                                ? renderFormattedLog(selectedLog.result)
+                                : <span className="text-gray-500">Loading...</span>}
+                        </div>
+
+                        <button
+                            className="absolute top-3 right-4 text-gray-400 hover:text-gray-600 text-xl"
+                            onClick={() => {
+                                setShowModal(false);
+                                setSelectedLog(null);
+                            }}
+                        >
+                            &times;
                         </button>
                     </div>
                 </div>
