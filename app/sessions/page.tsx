@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import {JSX, useEffect, useState} from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
@@ -183,6 +183,54 @@ export default function SessionsPage() {
         setLogData(error ? { result: { error: error.message } } : logRow)
     }
 
+    // Place this inside SessionsPage component, before `return`
+    const renderFormattedLog = (data: any): JSX.Element => {
+        if (!data || typeof data !== 'object') return <span className="text-gray-400 italic">Invalid log format</span>;
+
+        const steps = Array.isArray(data.steps) ? data.steps : [];
+        const otherFields = Object.entries(data).filter(([key]) => key !== 'steps');
+
+        return (
+            <div className="space-y-4">
+                {steps.length > 0 && (
+                    <div className="overflow-auto">
+                        <table className="min-w-full text-sm text-left border border-gray-200">
+                            <thead className="bg-gray-100 text-gray-700 font-semibold">
+                            <tr>
+                                {Object.keys(steps[0] || {}).map((key, idx) => (
+                                    <th key={idx} className="px-4 py-2 border-b border-gray-200 whitespace-nowrap">{key}</th>
+                                ))}
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {steps.map((step: any, idx: number) => (
+                                <tr key={idx} className="even:bg-gray-50">
+                                    {Object.values(step).map((val, i) => (
+                                        <td key={i} className="px-4 py-2 border-b border-gray-100 whitespace-nowrap text-gray-800">
+                                            {typeof val === 'number' ? val.toFixed(2) : String(val)}
+                                        </td>
+                                    ))}
+                                </tr>
+                            ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+
+                {otherFields.length > 0 && (
+                    <div className="space-y-1 pt-4">
+                        {otherFields.map(([key, value], idx) => (
+                            <div key={idx} className="text-sm text-gray-800">
+                                <span className="font-semibold text-gray-700">{key}</span>: {String(value)}
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+
     const handleLogout = async () => {
         await supabase.auth.signOut()
         router.push('/')
@@ -299,9 +347,11 @@ export default function SessionsPage() {
                     <div className="bg-white text-black p-6 rounded-lg max-w-2xl w-full relative">
                         <button onClick={() => setModalOpen(false)} className="absolute top-2 right-2 text-gray-400 hover:text-white">✖</button>
                         <h2 className="text-xl font-semibold mb-4">Session Logs</h2>
-                        <pre className="bg-gray-100 text-xs p-4 max-h-[400px] overflow-auto rounded whitespace-pre-wrap">
-              {JSON.stringify(logData?.result ?? 'No logs available.', null, 2)}
-            </pre>
+                        <div className="bg-white text-sm p-2 max-h-[400px] overflow-auto space-y-4">
+                            {logData?.result
+                                ? renderFormattedLog(logData.result)
+                                : <span className="text-gray-500">No logs available.</span>}
+                        </div>
                     </div>
                 </div>
             )}
