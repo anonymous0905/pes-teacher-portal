@@ -160,6 +160,8 @@ export default function ClassAnalyticsPage() {
             )
             : [];
 
+        // @ts-ignore
+        // @ts-ignore
         return (
             <div className="space-y-6 pr-2">
                 <div className="space-y-3">
@@ -229,6 +231,74 @@ export default function ClassAnalyticsPage() {
                                 <Bar dataKey="count" fill="#ff6347" />
                             </BarChart>
                         </ResponsiveContainer>
+                    </div>
+                )}
+
+                <div>
+                    <h4 className="font-semibold text-base mb-2">Practice Session Summary</h4>
+                    <table className="w-full bg-gray-100 text-black rounded overflow-hidden table-auto">
+                        <tbody>
+                        <tr><td className="p-2 font-medium">Average Score</td><td className="p-2">{modalContent.practice?.average_score.toFixed(2)}</td></tr>
+                        <tr><td className="p-2 font-medium">Average Time (s)</td><td className="p-2">{modalContent.practice?.average_time_sec.toFixed(2)}</td></tr>
+                        <tr><td className="p-2 font-medium">Total Sessions</td><td className="p-2">{modalContent.practice?.total_sessions}</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* Evaluation Stats Table */}
+                <div>
+                    <h4 className="font-semibold text-base mb-2">Evaluation Session Summary</h4>
+                    <table className="w-full bg-gray-100 text-black rounded overflow-hidden table-auto">
+                        <tbody>
+                        <tr><td className="p-2 font-medium">Average Score</td><td className="p-2">{modalContent.evaluation?.average_score.toFixed(2)}</td></tr>
+                        <tr><td className="p-2 font-medium">Average Time (s)</td><td className="p-2">{modalContent.evaluation?.average_time_sec.toFixed(2)}</td></tr>
+                        <tr><td className="p-2 font-medium">Total Sessions</td><td className="p-2">{modalContent.evaluation?.total_sessions}</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* Missed Steps Tables */}
+                {(Object.keys(modalContent.practice?.missed_steps || {}).length > 0) && (
+                    <div>
+                        <h4 className="font-semibold text-base mb-2">Missed Steps (Practice)</h4>
+                        <table className="w-full bg-gray-100 text-black rounded overflow-hidden table-auto">
+                            <thead className="bg-gray-300">
+                            <tr>
+                                <th className="p-2 text-left">Step</th>
+                                <th className="p-2 text-left">Count</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {Object.entries(modalContent.practice.missed_steps).map(([step, count], idx) => (
+                                <tr key={`practice-miss-${idx}`} className="odd:bg-white even:bg-gray-200">
+                                    <td className="p-2">{step}</td>
+                                    <td className="p-2">{count}</td>
+                                </tr>
+                            ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+
+                {(Object.keys(modalContent.evaluation?.missed_steps || {}).length > 0) && (
+                    <div>
+                        <h4 className="font-semibold text-base mb-2">Missed Steps (Evaluation)</h4>
+                        <table className="w-full bg-gray-100 text-black rounded overflow-hidden table-auto">
+                            <thead className="bg-gray-300">
+                            <tr>
+                                <th className="p-2 text-left">Step</th>
+                                <th className="p-2 text-left">Count</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {Object.entries(modalContent.evaluation.missed_steps).map(([step, count], idx) => (
+                                <tr key={`evaluation-miss-${idx}`} className="odd:bg-white even:bg-gray-200">
+                                    <td className="p-2">{step}</td>
+                                    <td className="p-2">{count}</td>
+                                </tr>
+                            ))}
+                            </tbody>
+                        </table>
                     </div>
                 )}
             </div>
