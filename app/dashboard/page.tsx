@@ -84,33 +84,49 @@ export default function DashboardPage() {
     }, [router])
 
     const renderFormattedLog = (data: any): JSX.Element => {
-        if (data === null || data === undefined) return <span className="text-gray-400 italic">null</span>;
+        if (!data || typeof data !== 'object') return <span className="text-gray-400 italic">Invalid log format</span>;
 
-        if (typeof data === 'object') {
-            if (Array.isArray(data)) {
-                return (
-                    <div className="space-y-4">
-                        {data.map((item, idx) => (
-                            <div key={idx} className="border-t border-gray-200 pt-2">
-                                {renderFormattedLog(item)}
+        const steps = Array.isArray(data.steps) ? data.steps : [];
+        const otherFields = Object.entries(data).filter(([key]) => key !== 'steps');
+
+        return (
+            <div className="space-y-4">
+                {steps.length > 0 && (
+                    <div className="overflow-auto">
+                        <table className="min-w-full text-sm text-left border border-gray-200">
+                            <thead className="bg-gray-100 text-gray-700 font-semibold">
+                            <tr>
+                                {Object.keys(steps[0] || {}).map((key, idx) => (
+                                    <th key={idx} className="px-4 py-2 border-b border-gray-200 whitespace-nowrap">{key}</th>
+                                ))}
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {steps.map((step: any, idx: number) => (
+                                <tr key={idx} className="even:bg-gray-50">
+                                    {Object.values(step).map((val, i) => (
+                                        <td key={i} className="px-4 py-2 border-b border-gray-100 whitespace-nowrap text-gray-800">
+                                            {typeof val === 'number' ? val.toFixed(2) : String(val)}
+                                        </td>
+                                    ))}
+                                </tr>
+                            ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+
+                {otherFields.length > 0 && (
+                    <div className="space-y-1 pt-4">
+                        {otherFields.map(([key, value], idx) => (
+                            <div key={idx} className="text-sm text-gray-800">
+                                <span className="font-semibold text-gray-700">{key}</span>: {String(value)}
                             </div>
                         ))}
                     </div>
-                );
-            }
-
-            return (
-                <div className="space-y-1">
-                    {Object.entries(data).map(([key, value], idx) => (
-                        <div key={idx} className="text-sm text-gray-800">
-                            <span className="font-semibold text-gray-700">{key}</span>: {renderFormattedLog(value)}
-                        </div>
-                    ))}
-                </div>
-            );
-        }
-
-        return <span className="text-sm text-gray-800">{String(data)}</span>;
+                )}
+            </div>
+        );
     };
 
     const handleViewLogs = async (sessionId: string) => {
@@ -330,7 +346,7 @@ export default function DashboardPage() {
                     <div className="bg-white text-black p-6 rounded-2xl max-w-3xl w-full shadow-xl relative">
                         <h3 className="text-xl font-semibold mb-4 border-b pb-2">Session Log</h3>
 
-                        <div className="bg-white text-sm p-2 max-h-[400px] overflow-auto space-y-2">
+                        <div className="bg-white text-sm p-2 max-h-[400px] overflow-auto space-y-4">
                             {selectedLog?.result
                                 ? renderFormattedLog(selectedLog.result)
                                 : <span className="text-gray-500">Loading...</span>}
