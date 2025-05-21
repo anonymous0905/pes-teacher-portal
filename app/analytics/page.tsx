@@ -272,7 +272,7 @@ export default function ClassAnalyticsPage() {
                             {Object.entries(modalContent.practice.missed_steps).map(([step, count], idx) => (
                                 <tr key={`practice-miss-${idx}`} className="odd:bg-white even:bg-gray-200">
                                     <td className="p-2">{step}</td>
-                                    <td className="p-2">{count}</td>
+                                    <td className="p-2">{String(count)}</td>
                                 </tr>
                             ))}
                             </tbody>
@@ -294,7 +294,7 @@ export default function ClassAnalyticsPage() {
                             {Object.entries(modalContent.evaluation.missed_steps).map(([step, count], idx) => (
                                 <tr key={`evaluation-miss-${idx}`} className="odd:bg-white even:bg-gray-200">
                                     <td className="p-2">{step}</td>
-                                    <td className="p-2">{count}</td>
+                                    <td className="p-2">{String(count)}</td>
                                 </tr>
                             ))}
                             </tbody>
