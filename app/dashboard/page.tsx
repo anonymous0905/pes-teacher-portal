@@ -1,7 +1,7 @@
 // Complete DashboardPage.tsx
 'use client'
 
-import { useEffect, useState } from 'react'
+import {JSX, useEffect, useState} from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import dynamic from 'next/dynamic'
@@ -82,6 +82,52 @@ export default function DashboardPage() {
             setLogAvailability(logs)
         })()
     }, [router])
+
+    const renderFormattedLog = (data: any): JSX.Element => {
+        if (!data || typeof data !== 'object') return <span className="text-gray-400 italic">Invalid log format</span>;
+
+        const steps = Array.isArray(data.steps) ? data.steps : [];
+        const otherFields = Object.entries(data).filter(([key]) => key !== 'steps');
+
+        return (
+            <div className="space-y-4">
+                {steps.length > 0 && (
+                    <div className="overflow-auto">
+                        <table className="min-w-full text-sm text-left border border-gray-200">
+                            <thead className="bg-gray-100 text-gray-700 font-semibold">
+                            <tr>
+                                {Object.keys(steps[0] || {}).map((key, idx) => (
+                                    <th key={idx} className="px-4 py-2 border-b border-gray-200 whitespace-nowrap">{key}</th>
+                                ))}
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {steps.map((step: any, idx: number) => (
+                                <tr key={idx} className="even:bg-gray-50">
+                                    {Object.values(step).map((val, i) => (
+                                        <td key={i} className="px-4 py-2 border-b border-gray-100 whitespace-nowrap text-gray-800">
+                                            {typeof val === 'number' ? val.toFixed(2) : String(val)}
+                                        </td>
+                                    ))}
+                                </tr>
+                            ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+
+                {otherFields.length > 0 && (
+                    <div className="space-y-1 pt-4">
+                        {otherFields.map(([key, value], idx) => (
+                            <div key={idx} className="text-sm text-gray-800">
+                                <span className="font-semibold text-gray-700">{key}</span>: {String(value)}
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        );
+    };
 
     const handleViewLogs = async (sessionId: string) => {
         setShowModal(true)
@@ -191,6 +237,8 @@ export default function DashboardPage() {
     };
 
 
+
+
     return (
         <>
             <style>{`@keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}.blink{animation:blink 1s infinite;}`}</style>
@@ -295,13 +343,23 @@ export default function DashboardPage() {
 
             {showModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white text-black p-6 rounded-lg max-w-2xl w-full relative">
-                        <h3 className="text-lg font-bold mb-4">Session Log</h3>
-                        <pre className="bg-gray-100 text-xs p-4 max-h-[400px] overflow-auto rounded whitespace-pre-wrap">
-                            {selectedLog?.result ? JSON.stringify(selectedLog.result, null, 2) : 'Loading...'}
-                        </pre>
-                        <button className="absolute top-2 right-3 text-gray-600 hover:text-black" onClick={() => { setShowModal(false); setSelectedLog(null) }}>
-                            ✕
+                    <div className="bg-white text-black p-6 rounded-2xl max-w-3xl w-full shadow-xl relative">
+                        <h3 className="text-xl font-semibold mb-4 border-b pb-2">Session Log</h3>
+
+                        <div className="bg-white text-sm p-2 max-h-[400px] overflow-auto space-y-4">
+                            {selectedLog?.result
+                                ? renderFormattedLog(selectedLog.result)
+                                : <span className="text-gray-500">Loading...</span>}
+                        </div>
+
+                        <button
+                            className="absolute top-3 right-4 text-gray-400 hover:text-gray-600 text-xl"
+                            onClick={() => {
+                                setShowModal(false);
+                                setSelectedLog(null);
+                            }}
+                        >
+                            &times;
                         </button>
                     </div>
                 </div>
