@@ -252,7 +252,7 @@ export default function DashboardPage() {
                     <div>
                         <Image src={logo} alt="Logo" width={80} height={80} className="mb-8 " />
                         <nav className="space-y-4 text-xl">
-                            <button onClick={() => router.push('/dashboard')} className="text-left w-full font-bold underline">Dashboard</button>
+                            <button onClick={() => router.push('/dashboard')} className="text-left w-full bg-gray-200 text-black rounded px-1 py-1">Dashboard</button>
                             <button onClick={() => router.push('/sessions')} className="text-left w-full">Sessions</button>
                             <button onClick={() => router.push('/classcreate')} className="text-left w-full">Bulk Creation</button>
                             <button onClick={() => router.push('/analytics')} className="text-left w-full">Analytics</button>
