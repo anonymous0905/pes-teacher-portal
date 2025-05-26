@@ -436,7 +436,7 @@ export default function ClassAnalyticsPage() {
         cloned.style.color = '#000000';
         cloned.style.padding = '20px';
         cloned.style.width = '700px';
-        cloned.style.minHeight = '2900px';
+        cloned.style.minHeight = '2901px';
         cloned.style.overflow = 'visible';
 
         const opt = {
