@@ -390,27 +390,41 @@ export default function ClassAnalyticsPage() {
     const [emailToSend, setEmailToSend] = useState('')
 
     const handleDownloadPDF = async () => {
-        const content = document.getElementById('analytics-content')
-        if (!content) return alert('Content not found')
+        const content = document.getElementById('analytics-content');
+        if (!content) return alert('Content not found');
 
-        const html2pdf = (await import('html2pdf.js')).default
-        const cloned = content.cloneNode(true) as HTMLElement
-        cloned.style.backgroundColor = '#ffffff'
-        cloned.style.color = '#000000'
-        cloned.style.padding = '20px'
-        cloned.style.width = '800px'
+        const html2pdf = (await import('html2pdf.js')).default;
 
-        html2pdf().set({
+        const cloned = content.cloneNode(true) as HTMLElement;
+        cloned.style.backgroundColor = '#ffffff';
+        cloned.style.color = '#000000';
+        cloned.style.padding = '20px';
+        cloned.style.width = '700px';
+        cloned.style.minHeight = '2900px';
+        cloned.style.overflow = 'visible';
+
+        const opt = {
             margin: 0.5,
             filename: `${modalTitle}.pdf`,
-            html2canvas: { scale: 2 },
+            html2canvas: {
+                scale: 2,
+                scrollY: 0,
+                windowWidth: 1200
+            },
             jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-        }).from(cloned).save()
-    }
+        };
+
+        // Give charts time to fully render before capturing
+        setTimeout(() => {
+            html2pdf().set(opt).from(cloned).save();
+        }, 100);
+    };
+
 
 
     const handleEmailAnalytics = async () => {
         if (!emailToSend) return alert('Enter a valid email');
+
         const token = (await supabase.auth.getSession()).data.session?.access_token;
         const content = document.getElementById('analytics-content');
         if (!content) return alert('Content not found');
@@ -421,37 +435,46 @@ export default function ClassAnalyticsPage() {
         cloned.style.backgroundColor = '#ffffff';
         cloned.style.color = '#000000';
         cloned.style.padding = '20px';
-        cloned.style.width = '800px';
+        cloned.style.width = '700px';
+        cloned.style.minHeight = '2900px';
+        cloned.style.overflow = 'visible';
 
         const opt = {
             margin: 0.5,
             filename: `${modalTitle}.pdf`,
-            html2canvas: { scale: 2 },
+            html2canvas: {
+                scale: 2,
+                scrollY: 0,
+                windowWidth: 1200
+            },
             jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
         };
 
-        // Generate PDF as Blob
-        const blob = await html2pdf().from(cloned).set(opt).outputPdf('blob');
-        const base64 = await blobToBase64(blob);
+        // Wrap PDF generation in a delay
+        setTimeout(async () => {
+            const blob = await html2pdf().from(cloned).set(opt).outputPdf('blob');
+            const base64 = await blobToBase64(blob);
 
-        const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/email-analytics`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-                email: emailToSend,
-                subject: modalTitle,
-                pdfBase64: base64,
-                filename: `${modalTitle}.pdf`
-            }),
-        });
+            const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/email-analytics`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    email: emailToSend,
+                    subject: modalTitle,
+                    pdfBase64: base64,
+                    filename: `${modalTitle}.pdf`
+                }),
+            });
 
-        const result = await response.json();
-        if (response.ok) alert('Email sent successfully!');
-        else alert(`Failed to send email: ${result.error}`);
+            const result = await response.json();
+            if (response.ok) alert('Email sent successfully!');
+            else alert(`Failed to send email: ${result.error}`);
+        }, 100);
     };
+
 
     const blobToBase64 = (blob: Blob): Promise<string> => {
         return new Promise((resolve, reject) => {
