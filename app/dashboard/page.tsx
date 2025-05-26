@@ -287,7 +287,7 @@ export default function DashboardPage() {
                         </section>
 
                         <section className="bg-[#3a3a3a] p-6 rounded-2xl w-1/2 relative">
-                            <h3 className="text-2xl font-bold mb-4">Performance</h3>
+                            <h3 className="text-2xl font-bold mb-4">Sessions</h3>
                             <div className="h-48 rounded overflow-hidden relative">
                                 <Image src={graphBg} alt="Graph Background" fill className="object-cover opacity-5" />
                                 <div className="absolute inset-0 z-10">
