@@ -474,13 +474,13 @@ export default function ClassAnalyticsPage() {
                             <button onClick={() => router.push('/dashboard')} className="text-left w-full">Dashboard</button>
                             <button onClick={() => router.push('/sessions')} className="text-left w-full">Sessions</button>
                             <button onClick={() => router.push('/classcreate')} className="text-left w-full">Bulk Creation</button>
-                            <button onClick={() => router.push('/analytics')} className="text-left w-full font-bold underline">Analytics</button>
+                            <button onClick={() => router.push('/analytics')} className="text-left w-full bg-gray-200 text-black rounded px-1 py-1">Analytics</button>
                         </nav>
                         <button onClick={async () => { await supabase.auth.signOut(); router.push('/') }} className="text-left text-lg mt-10">Logout</button>
                     </div>
                 </aside>
                 <div className="flex-1 p-10 space-y-10 relative ml-64">
-                    <div className="max-w-5xl mx-auto bg-black rounded-xl shadow-lg p-6">
+                    <div className="max-w-5xl mx-auto bg-black rounded-xl shadow-lg p-6 mt-10">
                         <h1 className="text-2xl font-bold mb-6">Class-wise Analytics</h1>
                         <div className="flex gap-4 mb-4">
                             <input type="text" placeholder="Semester" className="p-2 rounded bg-gray-800 border border-gray-700" value={semester} onChange={(e) => setSemester(e.target.value)} />

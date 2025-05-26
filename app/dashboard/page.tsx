@@ -252,7 +252,7 @@ export default function DashboardPage() {
                     <div>
                         <Image src={logo} alt="Logo" width={80} height={80} className="mb-8 " />
                         <nav className="space-y-4 text-xl">
-                            <button onClick={() => router.push('/dashboard')} className="text-left w-full font-bold underline">Dashboard</button>
+                            <button onClick={() => router.push('/dashboard')} className="text-left w-full bg-gray-200 text-black rounded px-1 py-1">Dashboard</button>
                             <button onClick={() => router.push('/sessions')} className="text-left w-full">Sessions</button>
                             <button onClick={() => router.push('/classcreate')} className="text-left w-full">Bulk Creation</button>
                             <button onClick={() => router.push('/analytics')} className="text-left w-full">Analytics</button>
@@ -287,7 +287,7 @@ export default function DashboardPage() {
                         </section>
 
                         <section className="bg-[#3a3a3a] p-6 rounded-2xl w-1/2 relative">
-                            <h3 className="text-2xl font-bold mb-4">Performance</h3>
+                            <h3 className="text-2xl font-bold mb-4">Sessions</h3>
                             <div className="h-48 rounded overflow-hidden relative">
                                 <Image src={graphBg} alt="Graph Background" fill className="object-cover opacity-5" />
                                 <div className="absolute inset-0 z-10">

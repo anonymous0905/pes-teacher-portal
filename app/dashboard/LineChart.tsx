@@ -8,34 +8,51 @@ import {
     CartesianGrid,
     Tooltip,
     ResponsiveContainer
-} from 'recharts'
+} from 'recharts';
+import { useState, useEffect } from 'react';
 
-const dummyData = [
-    { name: 'S1', score: 72 },
-    { name: 'S2', score: 85 },
-    { name: 'S3', score: 90 },
-    { name: 'S4', score: 60 },
-    { name: 'S5', score: 95 },
-    { name: 'S6', score: 88 }
-]
+interface SessionStats {
+    date: string;
+    count: number;
+}
 
 export default function LineChart() {
+    const [chartData, setChartData] = useState<SessionStats[]>([]);
+
+    useEffect(() => {
+        const fetchSessionData = async () => {
+            try {
+                const res = await fetch(
+                    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/sessions-per-day`
+                );
+                if (!res.ok) throw new Error('Failed to fetch session data');
+                const data: SessionStats[] = await res.json();
+
+                setChartData(data);
+            } catch (err) {
+                console.error('❌ Error fetching session stats:', err);
+            }
+        };
+
+        fetchSessionData();
+    }, []);
+
     return (
         <ResponsiveContainer width="100%" height="100%">
-            <ReLineChart data={dummyData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+            <ReLineChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="4 4" stroke="#555" />
-                <XAxis dataKey="name" stroke="#ccc" />
+                <XAxis dataKey="date" stroke="#ccc" />
                 <YAxis stroke="#ccc" />
                 <Tooltip contentStyle={{ backgroundColor: '#222', border: 'none' }} />
                 <Line
                     type="monotone"
-                    dataKey="score"
-                    stroke="#f97316" // orange
+                    dataKey="count"
+                    stroke="#f97316"
                     strokeWidth={3}
                     dot={{ stroke: '#f97316', strokeWidth: 2, r: 4 }}
                     activeDot={{ r: 6 }}
                 />
             </ReLineChart>
         </ResponsiveContainer>
-    )
+    );
 }
