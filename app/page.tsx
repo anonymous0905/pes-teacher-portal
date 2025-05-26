@@ -105,7 +105,7 @@ export default function LoginPage() {
             </div>
 
             {/* Right Panel */}
-            <div className="w-1/2 relative bg-black">
+            <div className="w-1/2 relative bg-black pointer-events-none">
                 <Image
                     src={vrDoctorsImg}
                     alt="Doctors using VR"
