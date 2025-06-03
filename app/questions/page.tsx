@@ -34,6 +34,9 @@ export default function QuestionManagementPage() {
     const [showAddModal, setShowAddModal] = useState(false);
     const [newQuestionData, setNewQuestionData] = useState<Question>({ id: '', question: '', options: ['', '', '', ''], correct_option: '', area: '' });
     const [areaOptions, setAreaOptions] = useState<string[] | null>(null);
+    const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null);
+    const [uploading, setUploading] = useState(false);
+
 
     useEffect(() => {
         (async () => {
@@ -158,6 +161,63 @@ export default function QuestionManagementPage() {
             alert('Delete failed: ' + err.error);
         }
     };
+
+    const handleCSVUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files?.length || !selectedProcedure) return;
+
+        const file = e.target.files[0];
+        const text = await file.text();
+        const lines = text.trim().split('\n').slice(1); // Skip header line
+        const total = lines.length;
+
+        const session = await supabase.auth.getSession();
+        const token = session.data.session?.access_token;
+        if (!token) return alert('Unauthorized');
+
+        setUploading(true);
+        setUploadProgress({ current: 0, total });
+
+        let successCount = 0;
+        let failCount = 0;
+
+        for (let i = 0; i < lines.length; i++) {
+            const [area, question, correctAnswer, optionA, optionB, optionC, optionD] = lines[i].split(',');
+
+            const payload = {
+                question: question.trim(),
+                options: [
+                    optionA?.trim() ?? '',
+                    optionB?.trim() ?? '',
+                    optionC?.trim() ?? '',
+                    optionD?.trim() ?? ''
+                ],
+                correct_option: correctAnswer.trim(),
+                procedure_id: selectedProcedure.id,
+                area: area.trim()
+            };
+
+            const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/add-question`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) successCount++;
+            else failCount++;
+
+            setUploadProgress({ current: i + 1, total });
+        }
+
+        setUploading(false);
+        setUploadProgress(null);
+        alert(`Upload complete.\n✔ Success: ${successCount}\n✖ Failed: ${failCount}`);
+        fetchQuestions(selectedProcedure.package_name);
+    };
+
+
 
     const handleAddQuestion = async () => {
         const session = await supabase.auth.getSession();
@@ -327,25 +387,44 @@ export default function QuestionManagementPage() {
                     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                         <div className="bg-white text-black p-6 rounded-2xl w-full max-w-2xl">
                             <h3 className="text-xl font-bold mb-4">Add New Question</h3>
+
                             <label className="block font-semibold mb-1">Question</label>
-                            <input required value={newQuestionData.question} onChange={e => setNewQuestionData({ ...newQuestionData, question: e.target.value })} className="w-full p-2 mb-4 border" />
+                            <input
+                                required
+                                value={newQuestionData.question}
+                                onChange={e => setNewQuestionData({ ...newQuestionData, question: e.target.value })}
+                                className="w-full p-2 mb-4 border"
+                            />
+
                             {newQuestionData.options.map((opt, idx) => (
                                 <div key={idx} className="mb-2">
                                     <label className="block font-semibold mb-1">Option {String.fromCharCode(65 + idx)}</label>
-                                    <input required value={opt} onChange={e => {
-                                        const newOpts = [...newQuestionData.options];
-                                        newOpts[idx] = e.target.value;
-                                        setNewQuestionData({ ...newQuestionData, options: newOpts });
-                                    }} className="w-full p-2 border" />
+                                    <input
+                                        required
+                                        value={opt}
+                                        onChange={e => {
+                                            const newOpts = [...newQuestionData.options];
+                                            newOpts[idx] = e.target.value;
+                                            setNewQuestionData({ ...newQuestionData, options: newOpts });
+                                        }}
+                                        className="w-full p-2 border"
+                                    />
                                 </div>
                             ))}
+
                             <label className="block font-semibold mb-1">Correct Option</label>
-                            <select required value={newQuestionData.correct_option} onChange={e => setNewQuestionData({ ...newQuestionData, correct_option: e.target.value })} className="w-full p-2 mb-4 border">
+                            <select
+                                required
+                                value={newQuestionData.correct_option}
+                                onChange={e => setNewQuestionData({ ...newQuestionData, correct_option: e.target.value })}
+                                className="w-full p-2 mb-4 border"
+                            >
                                 <option value="">Select correct answer</option>
                                 {newQuestionData.options.map((opt, idx) => (
                                     <option key={idx} value={opt}>{opt}</option>
                                 ))}
                             </select>
+
                             <label className="block font-semibold mb-1">Area</label>
                             {areaOptions ? (
                                 <select
@@ -368,13 +447,38 @@ export default function QuestionManagementPage() {
                                 />
                             )}
 
-                            <div className="flex justify-end gap-2">
+                            {/* CSV Upload Input */}
+                            <div className="mt-6">
+                                <label className="block font-semibold mb-1">Upload CSV</label>
+                                <input
+                                    type="file"
+                                    accept=".csv"
+                                    onChange={handleCSVUpload}
+                                    className="block text-sm text-white file:mr-4 file:py-2 file:px-4 file:border-0
+                     file:text-sm file:font-semibold file:bg-white file:text-black rounded"
+                                />
+                            </div>
+                            {uploading && uploadProgress && (
+                                <div className="mt-4 text-sm text-gray-800">
+                                    Uploading... {uploadProgress.current} of {uploadProgress.total}
+                                    <div className="w-full bg-gray-300 rounded h-2 mt-1">
+                                        <div
+                                            className="bg-blue-600 h-2 rounded transition-all duration-300"
+                                            style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%` }}
+                                        ></div>
+                                    </div>
+                                </div>
+                            )}
+
+
+                            <div className="flex justify-end gap-2 mt-6">
                                 <button onClick={() => setShowAddModal(false)} className="px-4 py-2 border rounded">Cancel</button>
                                 <button onClick={handleAddQuestion} className="px-4 py-2 bg-black text-white rounded">Add</button>
                             </div>
                         </div>
                     </div>
                 )}
+
 
 
             </main>
