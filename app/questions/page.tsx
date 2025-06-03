@@ -13,6 +13,7 @@ interface Procedure {
     procedure_name: string;
     package_name: string;
     accept_questions: boolean;
+    areas?: string;
 }
 
 interface Question {
@@ -32,6 +33,7 @@ export default function QuestionManagementPage() {
     const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
     const [showAddModal, setShowAddModal] = useState(false);
     const [newQuestionData, setNewQuestionData] = useState<Question>({ id: '', question: '', options: ['', '', '', ''], correct_option: '', area: '' });
+    const [areaOptions, setAreaOptions] = useState<string[] | null>(null);
 
     useEffect(() => {
         (async () => {
@@ -48,6 +50,30 @@ export default function QuestionManagementPage() {
         })();
     }, [router]);
 
+    useEffect(() => {
+        if (selectedProcedure) {
+            const proc = procedures.find(p => p.id === selectedProcedure.id);
+            if (proc && proc.areas) {
+                try {
+                    const parsed = typeof proc.areas === 'string' ? JSON.parse(proc.areas) : proc.areas;
+                    if (Array.isArray(parsed)) {
+                        setAreaOptions(parsed);
+                    } else {
+                        setAreaOptions(null);
+                    }
+                } catch (e) {
+                    console.error('Failed to parse areas:', e);
+                    setAreaOptions(null);
+                }
+            } else {
+                setAreaOptions(null);
+            }
+        } else {
+            setAreaOptions(null);
+        }
+    }, [selectedProcedure, procedures]);
+
+
     const fetchQuestions = async (pkg: string) => {
         const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/questions`, {
             method: 'POST',
@@ -60,12 +86,7 @@ export default function QuestionManagementPage() {
             id: q.id,
             question: q.question,
             correct_option: q.correct_answer,
-            options: [
-                q.option_a ?? '',
-                q.option_b ?? '',
-                q.option_c ?? '',
-                q.option_d ?? ''
-            ],
+            options: [q.option_a ?? '', q.option_b ?? '', q.option_c ?? '', q.option_d ?? ''],
             area: q.area ?? ''
         }));
 
@@ -131,13 +152,12 @@ export default function QuestionManagementPage() {
 
         if (res.ok) {
             setEditingQuestion(null);
-            fetchQuestions(selectedProcedure.package_name); // refresh list
+            fetchQuestions(selectedProcedure.package_name);
         } else {
             const err = await res.json();
             alert('Delete failed: ' + err.error);
         }
     };
-
 
     const handleAddQuestion = async () => {
         const session = await supabase.auth.getSession();
@@ -264,7 +284,27 @@ export default function QuestionManagementPage() {
                                 ))}
                             </select>
                             <label className="block font-semibold mb-1">Area</label>
-                            <input required value={editingQuestion.area || ''} onChange={e => setEditingQuestion({ ...editingQuestion, area: e.target.value })} className="w-full p-2 mb-4 border" />
+                            {areaOptions ? (
+                                <select
+                                    required
+                                    value={editingQuestion.area}
+                                    onChange={e => setEditingQuestion({ ...editingQuestion, area: e.target.value })}
+                                    className="w-full p-2 mb-4 border"
+                                >
+                                    <option value="">Select area</option>
+                                    {areaOptions.map((a, i) => (
+                                        <option key={i} value={a}>{a}</option>
+                                    ))}
+                                </select>
+                            ) : (
+                                <input
+                                    required
+                                    value={editingQuestion.area || ''}
+                                    onChange={e => setEditingQuestion({ ...editingQuestion, area: e.target.value })}
+                                    className="w-full p-2 mb-4 border"
+                                />
+                            )}
+
                             <div className="flex justify-between items-center">
                                 <button
                                     onClick={handleDelete}
@@ -307,7 +347,27 @@ export default function QuestionManagementPage() {
                                 ))}
                             </select>
                             <label className="block font-semibold mb-1">Area</label>
-                            <input required value={newQuestionData.area || ''} onChange={e => setNewQuestionData({ ...newQuestionData, area: e.target.value })} className="w-full p-2 mb-4 border" />
+                            {areaOptions ? (
+                                <select
+                                    required
+                                    value={newQuestionData.area}
+                                    onChange={e => setNewQuestionData({ ...newQuestionData, area: e.target.value })}
+                                    className="w-full p-2 mb-4 border"
+                                >
+                                    <option value="">Select area</option>
+                                    {areaOptions.map((a, i) => (
+                                        <option key={i} value={a}>{a}</option>
+                                    ))}
+                                </select>
+                            ) : (
+                                <input
+                                    required
+                                    value={newQuestionData.area || ''}
+                                    onChange={e => setNewQuestionData({ ...newQuestionData, area: e.target.value })}
+                                    className="w-full p-2 mb-4 border"
+                                />
+                            )}
+
                             <div className="flex justify-end gap-2">
                                 <button onClick={() => setShowAddModal(false)} className="px-4 py-2 border rounded">Cancel</button>
                                 <button onClick={handleAddQuestion} className="px-4 py-2 bg-black text-white rounded">Add</button>
