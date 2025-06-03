@@ -251,6 +251,7 @@ export default function SessionsPage() {
                             <button onClick={() => router.push('/sessions')} className="text-left w-full bg-gray-200 text-black rounded px-1 py-1">Sessions</button>
                             <button onClick={() => router.push('/classcreate')} className="text-left w-full">Bulk Creation</button>
                             <button onClick={() => router.push('/analytics')} className="text-left w-full">Analytics</button>
+                            <button onClick={() => router.push('/questions')}className="text-left w-full">Manage Questions</button>
                         </nav>
                         <button onClick={handleLogout} className="text-left text-lg mt-10">Logout</button>
                     </div>
