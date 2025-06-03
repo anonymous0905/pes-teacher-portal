@@ -209,7 +209,7 @@ export default function QuestionManagementPage() {
 
             <main className="flex-1 p-10 space-y-10 ml-64">
                 <Image src={headerWave} alt="Header" className="absolute top-0 right-0 w-1/3 opacity-20 pointer-events-none" />
-                <h2 className="text-3xl font-bold">Welcome, {teacherName}</h2>
+
 
                 <section className="bg-[#2a2a2a] p-6 rounded-2xl">
                     <h3 className="text-2xl font-bold mb-4">Select Procedure</h3>
