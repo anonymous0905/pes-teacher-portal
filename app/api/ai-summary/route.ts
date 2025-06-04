@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
         body: JSON.stringify({
           contents: [
             {
-              parts: [{ text: `Analyze the data and create a summary highlighting key trends and important points, keep it short I want to understand things in a glance:\n\n${text}` }],
+              parts: [{ text: `Analyze the data and create a summary highlighting key trends and important points, keep it short I want to understand things in a glance :\n\n${text}` }],
             },
           ],
         }),
