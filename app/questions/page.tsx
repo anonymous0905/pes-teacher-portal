@@ -264,6 +264,21 @@ export default function QuestionManagementPage() {
         fetchQuestions(selectedProcedure.package_name);
     };
 
+    const handleSampleDownload = () => {
+        const sample =
+            'Area,Question,Correct Answer,Option A,Option B,Option C,Option D\n' +
+            'Area1,Q1,Correct,OPTA,OPTB,OPTC,OPTD';
+        const blob = new Blob([sample], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', 'sample_questions.csv');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
 
 
     const handleAddQuestion = async () => {
@@ -534,6 +549,13 @@ export default function QuestionManagementPage() {
                                     className="block text-sm text-white file:mr-4 file:py-2 file:px-4 file:border-0
                      file:text-sm file:font-semibold file:bg-white file:text-black rounded"
                                 />
+                                <button
+                                    type="button"
+                                    onClick={handleSampleDownload}
+                                    className="mt-2 text-blue-400 underline text-sm"
+                                >
+                                    Download sample CSV
+                                </button>
                             </div>
                             {uploading && uploadProgress && (
                                 <div className="mt-4 text-sm text-gray-800">
