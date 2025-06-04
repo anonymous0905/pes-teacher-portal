@@ -1,0 +1,70 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.42.3";
+serve(async (req)=>{
+  const corsHeaders = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization"
+  };
+  if (req.method === "OPTIONS") {
+    return new Response("OK", {
+      headers: corsHeaders
+    });
+  }
+  if (req.method !== "GET") {
+    return new Response("Method not allowed", {
+      status: 405,
+      headers: corsHeaders
+    });
+  }
+  const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+  const SUPABASE_SECRET = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const client = createClient(SUPABASE_URL, SUPABASE_SECRET);
+  const { data, error } = await client.from("sessions").select("created_at").gte("created_at", new Date(new Date().setDate(new Date().getDate() - 6)).toISOString());
+  if (error) {
+    return new Response(JSON.stringify({
+      error: error.message
+    }), {
+      status: 500,
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "application/json"
+      }
+    });
+  }
+  const countByDay = {};
+  for(let i = 0; i < 7; i++){
+    const day = new Date();
+    day.setDate(day.getDate() - i);
+    const formatted = formatDate(day);
+    countByDay[formatted] = 0;
+  }
+  data.forEach((session)=>{
+    const sessionDate = new Date(session.created_at);
+    const formatted = formatDate(sessionDate);
+    if (countByDay[formatted] !== undefined) {
+      countByDay[formatted]++;
+    }
+  });
+  const result = Object.entries(countByDay).sort(([a], [b])=>{
+    const [dayA, monthA, yearA] = a.split("-").map(Number);
+    const [dayB, monthB, yearB] = b.split("-").map(Number);
+    return new Date(2000 + yearA, monthA - 1, dayA).getTime() - new Date(2000 + yearB, monthB - 1, dayB).getTime();
+  }).map(([date, count])=>({
+      date,
+      count
+    }));
+  return new Response(JSON.stringify(result), {
+    headers: {
+      ...corsHeaders,
+      "Content-Type": "application/json"
+    }
+  });
+});
+// Helper to format date to dd-mm-yy
+function formatDate(date) {
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = String(date.getFullYear()).slice(-2);
+  return `${day}-${month}-${year}`;
+}

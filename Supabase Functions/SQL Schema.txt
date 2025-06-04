@@ -1,0 +1,62 @@
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.Questions (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  question text NOT NULL,
+  correct_answer text NOT NULL,
+  option_a text NOT NULL,
+  option_b text NOT NULL,
+  option_c text NOT NULL,
+  option_d text NOT NULL,
+  area text,
+  procedure_id uuid NOT NULL,
+  CONSTRAINT Questions_pkey PRIMARY KEY (id),
+  CONSTRAINT Questions_Procedure ID_fkey FOREIGN KEY (procedure_id) REFERENCES public.procedures(id)
+);
+CREATE TABLE public.logs (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  session_id uuid NOT NULL UNIQUE,
+  teacher_id uuid,
+  result json NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  srn text NOT NULL,
+  CONSTRAINT logs_pkey PRIMARY KEY (id),
+  CONSTRAINT logs_session_id_fkey FOREIGN KEY (session_id) REFERENCES public.sessions(id),
+  CONSTRAINT logs_teacher_id_fkey FOREIGN KEY (teacher_id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.procedures (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  procedure_name text NOT NULL,
+  package_name text NOT NULL UNIQUE,
+  Accept Questions boolean NOT NULL DEFAULT false,
+  areas json,
+  CONSTRAINT procedures_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.sessions (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  session_code text NOT NULL UNIQUE,
+  teacher_id uuid NOT NULL,
+  procedure_id uuid,
+  srn text,
+  jwt text NOT NULL,
+  is_practice boolean DEFAULT true,
+  is_evaluation boolean DEFAULT false,
+  created_at timestamp with time zone DEFAULT now(),
+  expires_at timestamp with time zone,
+  CONSTRAINT sessions_pkey PRIMARY KEY (id),
+  CONSTRAINT sessions_teacher_id_fkey FOREIGN KEY (teacher_id) REFERENCES auth.users(id),
+  CONSTRAINT sessions_procedure_id_fkey FOREIGN KEY (procedure_id) REFERENCES public.procedures(id),
+  CONSTRAINT sessions_srn_fkey FOREIGN KEY (srn) REFERENCES public.students(srn)
+);
+CREATE TABLE public.students (
+  srn text NOT NULL,
+  name text NOT NULL,
+  email text UNIQUE,
+  section text NOT NULL,
+  semester integer NOT NULL,
+  CONSTRAINT students_pkey PRIMARY KEY (srn)
+);
+
+--Also create a Cron Job that clears expired sessions with no logs, I had scheduled it to run every 30 min to remove all the junk from the database.

@@ -1,0 +1,78 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+const supabase = createClient(Deno.env.get("SUPABASE_URL"), Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"));
+serve(async (req)=>{
+  if (req.method === "OPTIONS") {
+    return new Response("ok", {
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization"
+      }
+    });
+  }
+  const headers = {
+    "Content-Type": "application/json",
+    "Access-Control-Allow-Origin": "*"
+  };
+  try {
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authErr } = await supabase.auth.getUser(token);
+    if (authErr || !user) {
+      return new Response(JSON.stringify({
+        error: "Unauthorized",
+        detail: authErr?.message
+      }), {
+        status: 401,
+        headers
+      });
+    }
+    const body = await req.json();
+    const { question, options, correct_option, procedure_id, area } = body;
+    if (!question || !Array.isArray(options) || options.length !== 4 || !correct_option || !procedure_id) {
+      return new Response(JSON.stringify({
+        error: "Invalid input format"
+      }), {
+        status: 400,
+        headers
+      });
+    }
+    const { error: insertErr } = await supabase.from("Questions").insert([
+      {
+        question: question,
+        option_a: options[0],
+        option_b: options[1],
+        option_c: options[2],
+        option_d: options[3],
+        correct_answer: correct_option,
+        procedure_id: procedure_id,
+        area: area ?? null
+      }
+    ]);
+    if (insertErr) {
+      return new Response(JSON.stringify({
+        error: "Database insert failed",
+        detail: insertErr.message
+      }), {
+        status: 500,
+        headers
+      });
+    }
+    return new Response(JSON.stringify({
+      success: true
+    }), {
+      status: 200,
+      headers
+    });
+  } catch (err) {
+    console.error("add-question error:", err);
+    return new Response(JSON.stringify({
+      error: "Unhandled server error",
+      detail: err.message
+    }), {
+      status: 500,
+      headers
+    });
+  }
+});

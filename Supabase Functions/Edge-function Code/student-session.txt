@@ -1,0 +1,87 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+// Supabase setup with service role key
+const supabase = createClient(Deno.env.get("SUPABASE_URL"), Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"));
+// Common CORS headers
+const headers = {
+  "Content-Type": "application/json",
+  "Access-Control-Allow-Origin": "*"
+};
+// CORS preflight headers
+const corsPreflightHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization"
+};
+serve(async (req)=>{
+  if (req.method === "OPTIONS") {
+    return new Response("ok", {
+      headers: corsPreflightHeaders
+    });
+  }
+  try {
+    const { srn } = await req.json();
+    if (!srn) {
+      return new Response(JSON.stringify({
+        error: "SRN missing"
+      }), {
+        status: 400,
+        headers
+      });
+    }
+    // Fetch up to 10 recent unexpired sessions first (we'll filter for active manually)
+    const { data: sessions, error: sessionErr } = await supabase.from("sessions").select(`
+        id,
+        session_code,
+        is_practice,
+        is_evaluation,
+        expires_at,
+        procedure_id,
+        procedures ( procedure_name )
+      `).eq("srn", srn).gt("expires_at", new Date().toISOString()).order("created_at", {
+      ascending: false
+    }).limit(10); // Fetch more than 3 to allow filtering
+    if (sessionErr) {
+      return new Response(JSON.stringify({
+        error: sessionErr.message
+      }), {
+        status: 500,
+        headers
+      });
+    }
+    const activeSessions = [];
+    for (const session of sessions){
+      // Check if already logged
+      const { data: logs, error: logErr } = await supabase.from("logs").select("id").eq("session_id", session.id).limit(1);
+      if (logErr) {
+        return new Response(JSON.stringify({
+          error: logErr.message
+        }), {
+          status: 500,
+          headers
+        });
+      }
+      if (!logs || logs.length === 0) {
+        activeSessions.push({
+          session_code: session.session_code,
+          procedure_name: session.procedures?.procedure_name || "Unknown",
+          mode: session.is_practice && session.is_evaluation ? "Both" : session.is_practice ? "Practice" : session.is_evaluation ? "Evaluation" : "Unspecified",
+          expires_at: session.expires_at
+        });
+      }
+      if (activeSessions.length === 3) break; // Stop once we have 3
+    }
+    return new Response(JSON.stringify(activeSessions), {
+      headers
+    });
+  } catch (err) {
+    console.error("student-sessions error:", err);
+    return new Response(JSON.stringify({
+      error: "Unexpected server error",
+      detail: err.message
+    }), {
+      status: 500,
+      headers
+    });
+  }
+});
