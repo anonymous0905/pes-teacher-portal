@@ -48,6 +48,7 @@ export default function ClassAnalyticsPage() {
     const [modalContent, setModalContent] = useState<any>(null)
     const [modalTitle, setModalTitle] = useState('')
     const [isStudentView, setIsStudentView] = useState(false)
+    const [aiSummary, setAiSummary] = useState('')
 
     const [teacherName, setTeacherName] = useState('')
 
@@ -120,6 +121,22 @@ export default function ClassAnalyticsPage() {
         setModalTitle(`Class Analytics - ${procedure.procedure_name}`)
         setIsStudentView(false)
         setShowModal(true)
+        setAiSummary('')
+        try {
+            const sumRes = await fetch('/api/ai-summary', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: JSON.stringify(result) })
+            })
+            if (sumRes.ok) {
+                const data = await sumRes.json()
+                setAiSummary(data.summary)
+            } else {
+                setAiSummary('Failed to generate summary')
+            }
+        } catch (err) {
+            setAiSummary('Failed to generate summary')
+        }
     }
 
     const handleStudentAnalytics = async (srn: string) => {
@@ -142,6 +159,22 @@ export default function ClassAnalyticsPage() {
         setModalTitle(`Analytics - ${srn}`)
         setIsStudentView(true)
         setShowModal(true)
+        setAiSummary('')
+        try {
+            const sumRes = await fetch('/api/ai-summary', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: JSON.stringify(result) })
+            })
+            if (sumRes.ok) {
+                const data = await sumRes.json()
+                setAiSummary(data.summary)
+            } else {
+                setAiSummary('Failed to generate summary')
+            }
+        } catch (err) {
+            setAiSummary('Failed to generate summary')
+        }
     }
 
     const renderStudentGraphs = () => {
@@ -569,13 +602,18 @@ export default function ClassAnalyticsPage() {
                             </div>
 
                             {isStudentView ? renderStudentGraphs() : renderClassAnalytics()}
+                            {aiSummary && (
+                                <div className="mt-4 p-3 bg-gray-100 rounded text-sm whitespace-pre-wrap">
+                                    {aiSummary}
+                                </div>
+                            )}
                         </div>
                         <div className="flex gap-2 mt-6">
                             <button onClick={handleDownloadPDF} className="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-900">Download PDF</button>
                             <input type="email" placeholder="Enter email" value={emailToSend} onChange={(e) => setEmailToSend(e.target.value)} className="border border-gray-400 p-2 rounded text-sm" />
                             <button onClick={handleEmailAnalytics} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Email Report</button>
                         </div>
-                        <button className="absolute top-2 right-3 text-gray-600 hover:text-black" onClick={() => { setShowModal(false); setModalContent(null); setEmailToSend('') }}>✕</button>
+                        <button className="absolute top-2 right-3 text-gray-600 hover:text-black" onClick={() => { setShowModal(false); setModalContent(null); setEmailToSend(''); setAiSummary('') }}>✕</button>
                     </div>
                 </div>
             )}
