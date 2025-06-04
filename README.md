@@ -1,36 +1,88 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PES Teacher Portal
 
-## Getting Started
+PES Teacher Portal is a dashboard built with **Next.js 15** and **TypeScript** for managing practical sessions and analytics for students. The application relies heavily on [Supabase](https://supabase.com) for authentication, database access and several custom edge functions.
 
-First, run the development server:
+## Project Structure
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```
+├── app/                # Next.js app directory (routes and pages)
+│   ├── analytics/      # Class and student analytics
+│   ├── classcreate/    # Bulk session creation
+│   ├── dashboard/      # Landing page after login
+│   ├── questions/      # Manage questions and procedures
+│   ├── sessions/       # Session list and log viewer
+│   ├── submit/         # Manual log submission
+│   └── verify/         # Verify a session code
+├── lib/                # Reusable utilities (Supabase client)
+├── public/             # Static assets used across pages
+├── tailwind.config.js  # Tailwind CSS configuration
+└── next.config.ts      # Next.js configuration
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+All pages under `app/` follow the **Next.js App Router** pattern. Any folder with `page.tsx` exports a React component that is rendered as a route. The global layout and styles live in `app/layout.tsx` and `app/globals.css` respectively.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Setup
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. **Install dependencies**
 
-## Learn More
+   ```bash
+   npm install
+   ```
 
-To learn more about Next.js, take a look at the following resources:
+2. **Environment variables**
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+   Create a `.env.local` file and define the required Supabase values:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=your-project-url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+   ```
 
-## Deploy on Vercel
+   These variables are used in `lib/supabase.ts` to create the Supabase client and are also referenced when calling Supabase edge functions from the client.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+3. **Development server**
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+   ```bash
+   npm run dev
+   ```
+
+   The site will be available at [http://localhost:3000](http://localhost:3000).
+
+4. **Production build**
+
+   ```bash
+   npm run build
+   npm start
+   ```
+
+## Key Pages
+
+- **Login (`app/page.tsx`)** – Faculty sign in form. Uses `react-hook-form` and Supabase auth.
+- **Sign up (`app/signup/page.tsx`)** – Register new faculty members.
+- **Dashboard (`app/dashboard/page.tsx`)** – Create sessions for students, view recent sessions and logs, send session codes via email and display a sessions-per-day chart.
+- **Class analytics (`app/analytics/page.tsx`)** – Filter by semester/section, generate charts with `recharts` and email a PDF report.
+- **Session management (`app/sessions/page.tsx`)** – List all sessions and fetch logs through Supabase.
+- **Bulk creation (`app/classcreate/page.tsx`)** – Create multiple sessions and immediately email each code.
+- **Questions (`app/questions/page.tsx`)** – Manage procedure questions and add new ones.
+
+All of these pages communicate with Supabase tables or edge functions by fetching `${NEXT_PUBLIC_SUPABASE_URL}/functions/v1/<function>` and passing the user’s JWT token obtained from `supabase.auth.getSession()`.
+
+## Styling
+
+The project uses [Tailwind CSS](https://tailwindcss.com). Global styles and color variables are defined in `app/globals.css`. The Tailwind configuration is located in `tailwind.config.js` and is loaded via PostCSS.
+
+## Further Learning
+
+- Review Supabase documentation on **row level security (RLS)** and **edge functions**. Many actions (e.g. `create-session`, `email-session`, `class-analytics`) rely on custom functions deployed on Supabase.
+- Explore the **Next.js App Router** features such as server components and route segments. Each page in the `app/` directory is a good starting point.
+- Understand how `html2pdf.js` is used in `app/analytics/page.tsx` to capture a DOM node and convert it to a PDF for emailing.
+
+## Contributing
+
+1. Fork the repository and create a feature branch.
+2. Run `npm run lint` before submitting a pull request.
+3. Describe your changes clearly in the PR description.
+
+---
+
+This project provides a foundation for managing practical sessions and analytics for PES teachers. Feel free to explore the code and adapt it to your needs.
