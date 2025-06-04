@@ -36,6 +36,7 @@ export default function QuestionManagementPage() {
     const [areaOptions, setAreaOptions] = useState<string[] | null>(null);
     const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null);
     const [uploading, setUploading] = useState(false);
+    const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
 
 
     useEffect(() => {
@@ -160,6 +161,52 @@ export default function QuestionManagementPage() {
             const err = await res.json();
             alert('Delete failed: ' + err.error);
         }
+    };
+
+    const handleSelect = (id: string) => {
+        setSelectedQuestions(prev =>
+            prev.includes(id) ? prev.filter(q => q !== id) : [...prev, id]
+        );
+    };
+
+    const handleSelectAll = () => {
+        if (selectedQuestions.length === questions.length) {
+            setSelectedQuestions([]);
+        } else {
+            setSelectedQuestions(questions.map(q => q.id));
+        }
+    };
+
+    const handleDeleteSelected = async () => {
+        if (!selectedProcedure || selectedQuestions.length === 0) return;
+        const confirmDelete = confirm('Delete selected questions?');
+        if (!confirmDelete) return;
+        const session = await supabase.auth.getSession();
+        const token = session.data.session?.access_token;
+        if (!token) return alert('Unauthorized');
+
+        for (const id of selectedQuestions) {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/questions`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    package_name: selectedProcedure.package_name,
+                    delete: true,
+                    question_id: id
+                })
+            });
+            if (!res.ok) {
+                const err = await res.json();
+                alert('Delete failed: ' + err.error);
+                return;
+            }
+        }
+
+        setSelectedQuestions([]);
+        fetchQuestions(selectedProcedure.package_name);
     };
 
     const handleCSVUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -294,17 +341,46 @@ export default function QuestionManagementPage() {
                     <section className="bg-[#2a2a2a] p-6 rounded-2xl">
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-2xl font-bold">Questions</h3>
-                            <button
-                                onClick={() => setShowAddModal(true)}
-                                className="py-1 px-4 bg-white text-black rounded-full font-bold"
-                            >
-                                Add Question
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <label className="flex items-center text-sm">
+                                    <input
+                                        type="checkbox"
+                                        checked={questions.length > 0 && selectedQuestions.length === questions.length}
+                                        onChange={handleSelectAll}
+                                        className="mr-1"
+                                    />
+                                    Select All
+                                </label>
+                                {selectedQuestions.length > 0 && (
+                                    <button
+                                        onClick={handleDeleteSelected}
+                                        className="py-1 px-3 bg-red-600 text-white rounded"
+                                    >
+                                        Delete Selected
+                                    </button>
+                                )}
+                                <button
+                                    onClick={() => setShowAddModal(true)}
+                                    className="py-1 px-4 bg-white text-black rounded-full font-bold"
+                                >
+                                    Add Question
+                                </button>
+                            </div>
                         </div>
                         <ul className="space-y-4">
                             {questions.map((q, idx) => (
                                 <li key={q.id} className="bg-[#3a3a3a] p-4 rounded-xl">
-                                    <div className="font-semibold mb-2">{idx + 1}. {q.question}</div>
+                                    <div className="flex items-start gap-2">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedQuestions.includes(q.id)}
+                                            onChange={() => handleSelect(q.id)}
+                                            className="mt-1"
+                                        />
+                                        <div className="font-semibold mb-2 flex-1">
+                                            {idx + 1}. {q.question}
+                                        </div>
+                                    </div>
                                     <ul className="list-disc pl-6">
                                         {q.options.map((opt, i) => (
                                             <li key={i} className={opt === q.correct_option ? 'text-green-400' : ''}>{opt}</li>
