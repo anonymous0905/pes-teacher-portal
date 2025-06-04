@@ -36,7 +36,7 @@ All pages under `app/` follow the **Next.js App Router** pattern. Any folder wit
   ```env
   NEXT_PUBLIC_SUPABASE_URL=your-project-url
   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-  HF_API_TOKEN=your-huggingface-token
+  GEMINI_API_KEY=your-google-api-key
   ```
 
    These variables are used in `lib/supabase.ts` to create the Supabase client and are also referenced when calling Supabase edge functions from the client.
