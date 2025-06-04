@@ -1,0 +1,135 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.42.3";
+serve(async (req)=>{
+  const corsHeaders = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization"
+  };
+  if (req.method === "OPTIONS") return new Response("OK", {
+    headers: corsHeaders
+  });
+  try {
+    const { semester, section, procedure_name } = await req.json();
+    if (!semester || !section || !procedure_name) {
+      return new Response(JSON.stringify({
+        error: "Missing input fields"
+      }), {
+        status: 400,
+        headers: corsHeaders
+      });
+    }
+    const supabase = createClient(Deno.env.get("SUPABASE_URL"), Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"));
+    // 1. Get procedure ID
+    const { data: procedure, error: procErr } = await supabase.from("procedures").select("id").eq("procedure_name", procedure_name).single();
+    if (procErr || !procedure) {
+      return new Response(JSON.stringify({
+        error: "Procedure not found"
+      }), {
+        status: 404,
+        headers: corsHeaders
+      });
+    }
+    // 2. Get all students in that semester and section
+    const { data: students, error: studentErr } = await supabase.from("students").select("srn, name").eq("semester", semester).eq("section", section);
+    if (studentErr) {
+      return new Response(JSON.stringify({
+        error: "Failed to fetch students"
+      }), {
+        status: 500,
+        headers: corsHeaders
+      });
+    }
+    const srnList = students.map((s)=>s.srn);
+    // 3. Fetch all logs for these SRNs and the given procedure
+    const { data: logs, error: logErr } = await supabase.from("logs").select("srn, result, sessions(is_practice, is_evaluation, procedure_id)").in("srn", srnList);
+    if (logErr) {
+      return new Response(JSON.stringify({
+        error: "Failed to fetch logs"
+      }), {
+        status: 500,
+        headers: corsHeaders
+      });
+    }
+    const matchedLogs = logs.filter((log)=>log.sessions?.procedure_id === procedure.id);
+    const practiceLogs = matchedLogs.filter((log)=>log.sessions?.is_practice);
+    const evaluationLogs = matchedLogs.filter((log)=>log.sessions?.is_evaluation);
+    function analyzeLogs(logsGroup) {
+      const studentMap = {};
+      const missedStepsAll = {};
+      let totalScore = 0, totalTime = 0;
+      for (const log of logsGroup){
+        const srn = log.srn;
+        const parsed = typeof log.result === "string" ? JSON.parse(log.result) : log.result;
+        if (!parsed || !parsed.steps) continue;
+        if (!studentMap[srn]) {
+          studentMap[srn] = {
+            total_score: 0,
+            total_time: 0,
+            count: 0
+          };
+        }
+        studentMap[srn].total_score += parsed.score || 0;
+        studentMap[srn].total_time += parsed.total_time_sec || 0;
+        studentMap[srn].count++;
+        totalScore += parsed.score || 0;
+        totalTime += parsed.total_time_sec || 0;
+        for (const step of parsed.steps){
+          if (step.status !== "Completed") {
+            missedStepsAll[step.name] = (missedStepsAll[step.name] || 0) + 1;
+          }
+        }
+      }
+      const averageScore = totalScore / logsGroup.length;
+      const averageTime = totalTime / logsGroup.length;
+      // Top 5 missed steps
+      const topMissedSteps = Object.entries(missedStepsAll).sort((a, b)=>b[1] - a[1]).slice(0, 5).map(([step, count])=>({
+          step,
+          count
+        }));
+      // Identify lagging students
+      const lagging = [];
+      for (const [srn, stats] of Object.entries(studentMap)){
+        const avgScore = stats.total_score / stats.count;
+        const avgTime = stats.total_time / stats.count;
+        const isLowScore = avgScore < 0.7 * averageScore; // assuming max score ~17
+        const isHighTime = avgTime > 1.2 * averageTime;
+        if (isLowScore || isHighTime) {
+          lagging.push({
+            srn,
+            avgScore,
+            avgTime,
+            sessions: stats.count
+          });
+        }
+      }
+      return {
+        average_score: Number(averageScore.toFixed(2)),
+        average_time_sec: Number(averageTime.toFixed(2)),
+        total_sessions: logsGroup.length,
+        top_missed_steps: topMissedSteps,
+        lagging_students: lagging
+      };
+    }
+    const practiceStats = analyzeLogs(practiceLogs);
+    const evaluationStats = analyzeLogs(evaluationLogs);
+    return new Response(JSON.stringify({
+      semester,
+      section,
+      procedure_name,
+      practice: practiceStats,
+      evaluation: evaluationStats
+    }), {
+      status: 200,
+      headers: corsHeaders
+    });
+  } catch (err) {
+    return new Response(JSON.stringify({
+      error: "Unexpected error",
+      details: err.message
+    }), {
+      status: 500,
+      headers: corsHeaders
+    });
+  }
+});

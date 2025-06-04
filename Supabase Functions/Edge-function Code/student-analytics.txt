@@ -1,0 +1,108 @@
+// analytics.ts — Supabase Edge Function
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.42.3";
+serve(async (req)=>{
+  const corsHeaders = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization"
+  };
+  // Handle preflight requests
+  if (req.method === "OPTIONS") {
+    return new Response("OK", {
+      headers: corsHeaders
+    });
+  }
+  // Reject non-POST methods
+  if (req.method !== "POST") {
+    return new Response("Method not allowed", {
+      status: 405,
+      headers: corsHeaders
+    });
+  }
+  try {
+    const { srn, procedure_name } = await req.json();
+    if (!srn || !procedure_name) {
+      return new Response(JSON.stringify({
+        error: "Missing srn or procedure_name"
+      }), {
+        status: 400,
+        headers: corsHeaders
+      });
+    }
+    const supabase = createClient(Deno.env.get("SUPABASE_URL"), Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"));
+    // Step 1: Get procedure_id for the given name
+    const { data: procedure, error: procErr } = await supabase.from("procedures").select("id").eq("procedure_name", procedure_name).single();
+    if (procErr || !procedure) {
+      return new Response(JSON.stringify({
+        error: "Procedure not found"
+      }), {
+        status: 404,
+        headers: corsHeaders
+      });
+    }
+    // Step 2: Fetch all logs matching the SRN and Procedure
+    const { data: logs, error: logErr } = await supabase.from("logs").select("result, session_id, srn, teacher_id, sessions(is_practice, is_evaluation, procedure_id)").eq("srn", srn);
+    if (logErr) {
+      return new Response(JSON.stringify({
+        error: "Failed to fetch logs"
+      }), {
+        status: 500,
+        headers: corsHeaders
+      });
+    }
+    const matchedLogs = logs.filter((log)=>log.sessions?.procedure_id === procedure.id);
+    // Group logs into practice and evaluation
+    const practiceLogs = matchedLogs.filter((log)=>log.sessions?.is_practice);
+    const evaluationLogs = matchedLogs.filter((log)=>log.sessions?.is_evaluation);
+    // Util to extract analytics from logs
+    const computeStats = (logsGroup)=>{
+      const timeSeries = [];
+      const scoreSeries = [];
+      const missedStepFreq = {};
+      for (const log of logsGroup){
+        try {
+          const parsed = typeof log.result === "string" ? JSON.parse(log.result) : log.result;
+          if (!parsed || !parsed.steps || !Array.isArray(parsed.steps)) continue;
+          scoreSeries.push(parsed.score || 0);
+          timeSeries.push(parsed.total_time_sec || 0);
+          for (const step of parsed.steps){
+            if (step.status !== "Completed") {
+              missedStepFreq[step.name] = (missedStepFreq[step.name] || 0) + 1;
+            }
+          }
+        } catch (err) {
+          console.error("Failed to parse log:", err);
+          continue;
+        }
+      }
+      return {
+        average_score: scoreSeries.length ? scoreSeries.reduce((a, b)=>a + b) / scoreSeries.length : 0,
+        average_time_sec: timeSeries.length ? timeSeries.reduce((a, b)=>a + b) / timeSeries.length : 0,
+        total_sessions: logsGroup.length,
+        missed_steps: missedStepFreq,
+        scores: scoreSeries,
+        total_times: timeSeries
+      };
+    };
+    const practiceStats = computeStats(practiceLogs);
+    const evaluationStats = computeStats(evaluationLogs);
+    return new Response(JSON.stringify({
+      srn,
+      procedure_name,
+      practice: practiceStats,
+      evaluation: evaluationStats
+    }), {
+      status: 200,
+      headers: corsHeaders
+    });
+  } catch (err) {
+    return new Response(JSON.stringify({
+      error: "Unexpected error",
+      details: err.message
+    }), {
+      status: 500,
+      headers: corsHeaders
+    });
+  }
+});

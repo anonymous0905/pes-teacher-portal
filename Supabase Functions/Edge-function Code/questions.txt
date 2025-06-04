@@ -1,0 +1,132 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+const supabase = createClient(Deno.env.get("SUPABASE_URL"), Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"));
+serve(async (req)=>{
+  if (req.method === "OPTIONS") {
+    return new Response("ok", {
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization"
+      }
+    });
+  }
+  const headers = {
+    "Content-Type": "application/json",
+    "Access-Control-Allow-Origin": "*"
+  };
+  try {
+    const body = await req.json();
+    const { package_name, update, delete: isDelete, question_id, updates } = body;
+    // 1. Get procedure_id
+    const { data: procedureData, error: procedureError } = await supabase.from("procedures").select("id, \"Accept Questions\"").eq("package_name", package_name).single();
+    if (procedureError || !procedureData) {
+      return new Response(JSON.stringify({
+        error: "Procedure not found."
+      }), {
+        headers,
+        status: 400
+      });
+    }
+    const procedure_id = procedureData.id;
+    // 2. Handle update/delete if needed
+    if (update || isDelete) {
+      const authHeader = req.headers.get("Authorization") ?? "";
+      const token = authHeader.replace("Bearer ", "");
+      const { data: { user }, error: authErr } = await supabase.auth.getUser(token);
+      if (authErr || !user) {
+        return new Response(JSON.stringify({
+          error: "Unauthorized"
+        }), {
+          headers,
+          status: 401
+        });
+      }
+      if (!question_id) {
+        return new Response(JSON.stringify({
+          error: "Missing question_id"
+        }), {
+          headers,
+          status: 400
+        });
+      }
+      if (update) {
+        if (!updates) {
+          return new Response(JSON.stringify({
+            error: "Missing updates"
+          }), {
+            headers,
+            status: 400
+          });
+        }
+        const updatePayload = {
+          question: updates.question,
+          option_a: updates.option_a,
+          option_b: updates.option_b,
+          option_c: updates.option_c,
+          option_d: updates.option_d,
+          correct_answer: updates.correct_option,
+          area: updates.area ?? null
+        };
+        const { error: updateError } = await supabase.from("Questions").update(updatePayload).eq("id", question_id).eq("procedure_id", procedure_id);
+        if (updateError) {
+          console.error("Update error:", updateError);
+          return new Response(JSON.stringify({
+            error: "Update failed",
+            detail: updateError.message
+          }), {
+            headers,
+            status: 500
+          });
+        }
+      }
+      if (isDelete) {
+        const { error: deleteError } = await supabase.from("Questions").delete().eq("id", question_id).eq("procedure_id", procedure_id);
+        if (deleteError) {
+          console.error("Delete error:", deleteError);
+          return new Response(JSON.stringify({
+            error: "Delete failed",
+            detail: deleteError.message
+          }), {
+            headers,
+            status: 500
+          });
+        }
+      }
+    }
+    // 3. Fetch questions
+    if (!procedureData["Accept Questions"]) {
+      return new Response(JSON.stringify({
+        error: "This procedure does not accept questions."
+      }), {
+        headers,
+        status: 403
+      });
+    }
+    const { data: questions, error: questionError } = await supabase.from("Questions").select("*").eq("procedure_id", procedure_id);
+    if (questionError) {
+      console.error("Fetch error:", questionError);
+      return new Response(JSON.stringify({
+        error: "Failed to fetch questions.",
+        detail: questionError.message
+      }), {
+        headers,
+        status: 500
+      });
+    }
+    return new Response(JSON.stringify({
+      questions
+    }), {
+      headers
+    });
+  } catch (err) {
+    console.error("Unexpected error:", err);
+    return new Response(JSON.stringify({
+      error: "Invalid request",
+      detail: err.message
+    }), {
+      headers,
+      status: 400
+    });
+  }
+});

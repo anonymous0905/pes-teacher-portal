@@ -1,0 +1,60 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import nodemailer from "npm:nodemailer";
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization"
+};
+serve(async (req)=>{
+  // Handle preflight (CORS)
+  if (req.method === "OPTIONS") {
+    return new Response("OK", {
+      headers: corsHeaders
+    });
+  }
+  try {
+    const { email, subject, pdfBase64, filename } = await req.json();
+    if (!email || !pdfBase64 || !filename) {
+      return new Response(JSON.stringify({
+        error: "Missing required fields"
+      }), {
+        status: 400,
+        headers: corsHeaders
+      });
+    }
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: Deno.env.get("GMAIL_USER"),
+        pass: Deno.env.get("GMAIL_PASS")
+      }
+    });
+    await transporter.sendMail({
+      from: Deno.env.get("GMAIL_USER"),
+      to: email,
+      subject: subject || "Analytics Report",
+      text: "Please find the attached analytics report.",
+      attachments: [
+        {
+          filename,
+          content: pdfBase64,
+          encoding: "base64"
+        }
+      ]
+    });
+    return new Response(JSON.stringify({
+      message: "Email sent successfully"
+    }), {
+      status: 200,
+      headers: corsHeaders
+    });
+  } catch (err) {
+    return new Response(JSON.stringify({
+      error: "Unexpected error",
+      details: err.message
+    }), {
+      status: 500,
+      headers: corsHeaders
+    });
+  }
+});

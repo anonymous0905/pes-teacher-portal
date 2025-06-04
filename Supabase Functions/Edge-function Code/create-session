@@ -1,0 +1,118 @@
+// functions/create-session/index.ts
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { create, getNumericDate } from "https://deno.land/x/djwt@v2.8/mod.ts";
+// --- single Supabase client -------------------------------------------------
+const supabase = createClient(Deno.env.get("SUPABASE_URL"), Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"));
+// --- one CryptoKey derived from your JWT secret -----------------------------
+const jwtSecret = Deno.env.get("JWT_SECRET");
+if (!jwtSecret) throw new Error("JWT_SECRET env-var is missing");
+const jwtKeyPromise = crypto.subtle.importKey("raw", new TextEncoder().encode(jwtSecret), {
+  name: "HMAC",
+  hash: "SHA-256"
+}, /* extractable */ false, [
+  "sign",
+  "verify"
+]);
+// ---------------------------------------------------------------------------
+//  Edge function handler
+// ---------------------------------------------------------------------------
+serve(async (req)=>{
+  // CORS pre-flight ----------------------------------------------------------
+  if (req.method === "OPTIONS") {
+    return new Response("ok", {
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization"
+      }
+    });
+  }
+  const headers = {
+    "Content-Type": "application/json",
+    "Access-Control-Allow-Origin": "*"
+  };
+  try {
+    // 1️⃣  Make sure the caller is authenticated ----------------------------
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const accessToken = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authErr } = await supabase.auth.getUser(accessToken);
+    if (authErr || !user) {
+      return new Response(JSON.stringify({
+        error: "Unauthorized",
+        detail: authErr?.message
+      }), {
+        status: 401,
+        headers
+      });
+    }
+    // 2️⃣  Validate input ----------------------------------------------------
+    const { package_name, srn, is_practice, is_evaluation } = await req.json();
+    if (!package_name || !srn) {
+      return new Response(JSON.stringify({
+        error: "Missing required fields"
+      }), {
+        status: 400,
+        headers
+      });
+    }
+    // 3️⃣  Resolve procedure -------------------------------------------------
+    const { data: procedure, error: procErr } = await supabase.from("procedures").select("id").eq("package_name", package_name).single();
+    if (procErr || !procedure) {
+      return new Response(JSON.stringify({
+        error: "Invalid package_name",
+        detail: procErr?.message
+      }), {
+        status: 400,
+        headers
+      });
+    }
+    // 4️⃣  Create session & sign JWT ----------------------------------------
+    const session_code = crypto.randomUUID().slice(0, 8).toUpperCase();
+    const expires_at = new Date(Date.now() + 2 * 60 * 60 * 1000); // 2 h
+    const jwt = await create({
+      alg: "HS256",
+      typ: "JWT"
+    }, {
+      sid: session_code,
+      exp: getNumericDate(2 * 60 * 60)
+    }, await jwtKeyPromise);
+    // 5️⃣  Persist session ---------------------------------------------------
+    const { error: insertErr } = await supabase.from("sessions").insert({
+      session_code,
+      teacher_id: user.id,
+      procedure_id: procedure.id,
+      srn,
+      is_practice,
+      is_evaluation,
+      jwt,
+      expires_at
+    });
+    if (insertErr) {
+      return new Response(JSON.stringify({
+        error: "Insert failed " + insertErr,
+        detail: insertErr.message
+      }), {
+        status: 500,
+        headers
+      });
+    }
+    // 6️⃣  Return session token ---------------------------------------------
+    return new Response(JSON.stringify({
+      session_code,
+      jwt,
+      expires_at
+    }), {
+      headers
+    });
+  } catch (err) {
+    console.error("Create-session error:", err);
+    return new Response(JSON.stringify({
+      error: "Unhandled server error",
+      detail: err.message
+    }), {
+      status: 500,
+      headers
+    });
+  }
+});

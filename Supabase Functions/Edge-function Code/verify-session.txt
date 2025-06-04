@@ -1,0 +1,90 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+// Supabase setup with service role key
+const supabase = createClient(Deno.env.get("SUPABASE_URL"), Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"));
+// Common CORS headers
+const headers = {
+  "Content-Type": "application/json",
+  "Access-Control-Allow-Origin": "*"
+};
+// Preflight (CORS OPTIONS) handler
+const corsPreflightHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization"
+};
+serve(async (req)=>{
+  if (req.method === "OPTIONS") {
+    return new Response("ok", {
+      headers: corsPreflightHeaders
+    });
+  }
+  try {
+    const { session_code } = await req.json();
+    if (!session_code) {
+      return new Response(JSON.stringify({
+        error: "Session code missing"
+      }), {
+        status: 400,
+        headers
+      });
+    }
+    // 1️⃣ Fetch session info
+    const { data: session } = await supabase.from("sessions").select("id, procedure_id, is_practice, is_evaluation, jwt, expires_at, session_code").eq("session_code", session_code).single();
+    if (!session) {
+      return new Response(JSON.stringify({
+        error: "Session not valid"
+      }), {
+        status: 400,
+        headers
+      });
+    }
+    // 2️⃣ Check if session expired (time-based)
+    if (new Date(session.expires_at) < new Date()) {
+      return new Response(JSON.stringify({
+        error: "Session not valid"
+      }), {
+        status: 400,
+        headers
+      });
+    }
+    // 3️⃣ Check if already logged (manual expiry)
+    const { data: logs } = await supabase.from("logs").select("id").eq("session_id", session.id).limit(1);
+    if (logs && logs.length > 0) {
+      return new Response(JSON.stringify({
+        error: "Session not valid"
+      }), {
+        status: 400,
+        headers
+      });
+    }
+    // 4️⃣ Fetch procedure info
+    const { data: procedure } = await supabase.from("procedures").select("package_name").eq("id", session.procedure_id).single();
+    if (!procedure) {
+      return new Response(JSON.stringify({
+        error: "Procedure not found"
+      }), {
+        status: 500,
+        headers
+      });
+    }
+    // ✅ Valid session - send result
+    return new Response(JSON.stringify({
+      package_name: procedure.package_name,
+      is_practice: session.is_practice,
+      is_evaluation: session.is_evaluation,
+      jwt: session.jwt
+    }), {
+      headers
+    });
+  } catch (err) {
+    console.error("Verify-session error:", err);
+    return new Response(JSON.stringify({
+      error: "Unexpected server error",
+      detail: err.message
+    }), {
+      status: 500,
+      headers
+    });
+  }
+});

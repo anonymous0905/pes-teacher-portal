@@ -1,0 +1,119 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { verify } from "https://deno.land/x/djwt@v2.8/mod.ts";
+// Initialize Supabase client
+const supabase = createClient(Deno.env.get("SUPABASE_URL"), Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"));
+// Load and validate JWT secret
+const JWT_SECRET = Deno.env.get("JWT_SECRET");
+if (!JWT_SECRET) throw new Error("JWT_SECRET env-var is missing");
+// Convert JWT secret to CryptoKey
+const jwtKeyPromise = crypto.subtle.importKey("raw", new TextEncoder().encode(JWT_SECRET), {
+  name: "HMAC",
+  hash: "SHA-256"
+}, false, [
+  "verify"
+]);
+// CORS headers
+const headers = {
+  "Content-Type": "application/json",
+  "Access-Control-Allow-Origin": "*"
+};
+const corsPreflightHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization"
+};
+// Main handler
+serve(async (req)=>{
+  if (req.method === "OPTIONS") {
+    return new Response("ok", {
+      headers: corsPreflightHeaders
+    });
+  }
+  try {
+    // 1️⃣ Extract JWT from Authorization header
+    const authHeader = req.headers.get("Authorization") || "";
+    const token = authHeader.replace("Bearer ", "");
+    if (!token) {
+      return new Response(JSON.stringify({
+        error: "No token provided"
+      }), {
+        status: 401,
+        headers
+      });
+    }
+    // 2️⃣ Verify token
+    const payload = await verify(token, await jwtKeyPromise, "HS256");
+    if (!payload || typeof payload !== "object" || !payload.sid) {
+      return new Response(JSON.stringify({
+        error: "Invalid token"
+      }), {
+        status: 401,
+        headers
+      });
+    }
+    // 3️⃣ Parse request body (only result and session_code needed)
+    const { session_code, result } = await req.json();
+    if (!session_code || !result) {
+      return new Response(JSON.stringify({
+        error: "Missing fields"
+      }), {
+        status: 400,
+        headers
+      });
+    }
+    // 4️⃣ Fetch session and extract srn
+    const { data: session, error: sessionError } = await supabase.from("sessions").select("id, session_code, teacher_id, srn").eq("session_code", session_code).single();
+    if (sessionError || !session || session.session_code !== payload.sid) {
+      return new Response(JSON.stringify({
+        error: "Session mismatch"
+      }), {
+        status: 403,
+        headers
+      });
+    }
+    // 5️⃣ Insert log using fetched srn
+    const { error: insertError } = await supabase.from("logs").insert([
+      {
+        session_id: session.id,
+        teacher_id: session.teacher_id,
+        srn: session.srn,
+        result
+      }
+    ]);
+    if (insertError) {
+      return new Response(JSON.stringify({
+        error: insertError.message
+      }), {
+        status: 500,
+        headers
+      });
+    }
+    // 6️⃣ Expire session
+    const { error: updateError } = await supabase.from("sessions").update({
+      expires_at: new Date().toISOString()
+    }).eq("id", session.id);
+    if (updateError) {
+      return new Response(JSON.stringify({
+        error: updateError.message
+      }), {
+        status: 500,
+        headers
+      });
+    }
+    // ✅ Success
+    return new Response(JSON.stringify({
+      status: "Log submitted and session expired"
+    }), {
+      headers
+    });
+  } catch (err) {
+    console.error("Error in submit-log:", err);
+    return new Response(JSON.stringify({
+      error: "Unauthorized or bad request"
+    }), {
+      status: 401,
+      headers
+    });
+  }
+});
