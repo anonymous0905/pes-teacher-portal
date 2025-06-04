@@ -3,15 +3,17 @@ import { NextRequest, NextResponse } from 'next/server'
 export async function POST(req: NextRequest) {
   try {
     const { text } = await req.json()
+
     const res = await fetch(
-      'https://api-inference.huggingface.co/models/google/flan-t5-small',
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${process.env.HF_API_TOKEN}`,
         },
-        body: JSON.stringify({ inputs: `Summarize the following text:\n\n${text}` }),
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: `Summarize the following text:\n\n${text}` }] }],
+        }),
       },
     )
 
@@ -22,7 +24,9 @@ export async function POST(req: NextRequest) {
     }
 
     const data = await res.json()
-    const summary = Array.isArray(data) ? data[0]?.generated_text || '' : data?.generated_text || ''
+    const summary =
+      data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || 'Failed to generate summary'
+
     return NextResponse.json({ summary })
   } catch (e) {
     console.error(e)
