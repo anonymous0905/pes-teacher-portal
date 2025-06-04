@@ -40,7 +40,38 @@ All pages under `app/` follow the **Next.js App Router** pattern. Any folder wit
 
    These variables are used in `lib/supabase.ts` to create the Supabase client and are also referenced when calling Supabase edge functions from the client.
 
-3. **Development server**
+3. **Supabase project**
+
+   Set up a Supabase project and apply the schema found in `Supabase Functions/SQL Schema.txt`.  The file defines all tables used by the dashboard.  You can reference `Supabase Functions/Schema Diagram.png` for a visual overview.
+
+   Deploy the following edge functions (source files are located in `Supabase Functions/Edge-function Code`):
+
+   - `add-question`
+   - `class-analytics`
+   - `create-session`
+   - `email-analytics`
+   - `email-session`
+   - `questions`
+   - `sessions-per-day`
+   - `student-analytics`
+   - `student-session`
+   - `submit-log`
+   - `verify-session`
+
+   Each function requires several secrets which can be set from the Supabase dashboard or via the CLI:
+
+   ```bash
+   supabase secrets set \
+     SUPABASE_URL=your-project-url \
+     SUPABASE_SERVICE_ROLE_KEY=your-service-role-key \
+     JWT_SECRET=your-jwt-secret \
+     GMAIL_USER=your-gmail-address \
+     GMAIL_PASS=your-gmail-password
+   ```
+
+   The `GMAIL_*` values are only needed for the email related functions but can be stored globally.  Finally, configure a scheduled task in Supabase to periodically delete expired sessions without logs as suggested at the bottom of the schema file.
+
+4. **Development server**
 
    ```bash
    npm run dev
@@ -48,7 +79,7 @@ All pages under `app/` follow the **Next.js App Router** pattern. Any folder wit
 
    The site will be available at [http://localhost:3000](http://localhost:3000).
 
-4. **Production build**
+5. **Production build**
 
    ```bash
    npm run build
