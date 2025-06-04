@@ -59,4 +59,4 @@ CREATE TABLE public.students (
   CONSTRAINT students_pkey PRIMARY KEY (srn)
 );
 
---Also create a Cron Job that clears expired sessions with no logs, I had scheduled it to run every 30 min to remove all the junk from the database.
+--Also create a Cron Job that clears expired sessions with no logs, I had scheduled it to run every 30 min to remove all the junk from the database and to reuse the codes.
