@@ -602,12 +602,14 @@ export default function ClassAnalyticsPage() {
                                 )}
                             </div>
 
+                            {isStudentView ? renderStudentGraphs() : renderClassAnalytics()}
                             {aiSummary && (
                                 <div className="mb-4 p-3 bg-gray-100 rounded text-sm">
-                                    <ReactMarkdown className="prose prose-sm">{aiSummary}</ReactMarkdown>
+                                    <div className="prose prose-sm">
+                                        <ReactMarkdown>{aiSummary}</ReactMarkdown>
+                                    </div>
                                 </div>
                             )}
-                            {isStudentView ? renderStudentGraphs() : renderClassAnalytics()}
                         </div>
                         <div className="flex gap-2 mt-6">
                             <button onClick={handleDownloadPDF} className="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-900">Download PDF</button>

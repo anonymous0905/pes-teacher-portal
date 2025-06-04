@@ -36,9 +36,10 @@ All pages under `app/` follow the **Next.js App Router** pattern. Any folder wit
   ```env
   NEXT_PUBLIC_SUPABASE_URL=your-project-url
   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-  GEMINI_API_KEY=your-google-api-key
+  HF_API_TOKEN=your-huggingface-token
   ```
 
+The `HF_API_TOKEN` is required by `/api/ai-summary` to call the Hugging Face inference API for generating report summaries.
    These variables are used in `lib/supabase.ts` to create the Supabase client and are also referenced when calling Supabase edge functions from the client.
 
 3. **Supabase project**

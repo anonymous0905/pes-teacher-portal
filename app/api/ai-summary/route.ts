@@ -4,19 +4,14 @@ export async function POST(req: NextRequest) {
   try {
     const { text } = await req.json()
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      'https://api-inference.huggingface.co/models/google/flan-t5-small',
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${process.env.HF_API_TOKEN}`,
         },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [{ text: `Summarize the following text:\n\n${text}` }],
-            },
-          ],
-        }),
+        body: JSON.stringify({ inputs: `Summarize the following text:\n\n${text}` }),
       },
     )
 
@@ -27,7 +22,7 @@ export async function POST(req: NextRequest) {
     }
 
     const data = await res.json()
-    const summary = data?.candidates?.[0]?.content?.parts?.[0]?.text || ''
+    const summary = Array.isArray(data) ? data[0]?.generated_text || '' : data?.generated_text || ''
     return NextResponse.json({ summary })
   } catch (e) {
     console.error(e)
