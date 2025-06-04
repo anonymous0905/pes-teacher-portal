@@ -2,6 +2,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import ReactMarkdown from 'react-markdown'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
@@ -121,7 +122,7 @@ export default function ClassAnalyticsPage() {
         setModalTitle(`Class Analytics - ${procedure.procedure_name}`)
         setIsStudentView(false)
         setShowModal(true)
-        setAiSummary('')
+        setAiSummary('Report being generated...')
         try {
             const sumRes = await fetch('/api/ai-summary', {
                 method: 'POST',
@@ -159,7 +160,7 @@ export default function ClassAnalyticsPage() {
         setModalTitle(`Analytics - ${srn}`)
         setIsStudentView(true)
         setShowModal(true)
-        setAiSummary('')
+        setAiSummary('Report being generated...')
         try {
             const sumRes = await fetch('/api/ai-summary', {
                 method: 'POST',
@@ -601,12 +602,12 @@ export default function ClassAnalyticsPage() {
                                 )}
                             </div>
 
-                            {isStudentView ? renderStudentGraphs() : renderClassAnalytics()}
                             {aiSummary && (
-                                <div className="mt-4 p-3 bg-gray-100 rounded text-sm whitespace-pre-wrap">
-                                    {aiSummary}
+                                <div className="mb-4 p-3 bg-gray-100 rounded text-sm">
+                                    <ReactMarkdown className="prose prose-sm">{aiSummary}</ReactMarkdown>
                                 </div>
                             )}
+                            {isStudentView ? renderStudentGraphs() : renderClassAnalytics()}
                         </div>
                         <div className="flex gap-2 mt-6">
                             <button onClick={handleDownloadPDF} className="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-900">Download PDF</button>
