@@ -263,6 +263,7 @@ export default function QuestionManagementPage() {
                     <button onClick={() => router.push('/classcreate')} className="text-left w-full">Bulk Creation</button>
                     <button onClick={() => router.push('/analytics')} className="text-left w-full">Analytics</button>
                     <button onClick={() => router.push('/questions')}className="text-left w-full bg-gray-200 text-black rounded px-2 py-1">Manage Questions</button>
+                    <button onClick={() => router.push('/myaccount')} className="text-left w-full">My Account</button>
                 </nav>
                 <button onClick={async () => { await supabase.auth.signOut(); router.push('/') }} className="text-left text-lg mt-10">Logout</button>
             </aside>
