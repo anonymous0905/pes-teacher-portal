@@ -279,6 +279,30 @@ export default function QuestionManagementPage() {
         URL.revokeObjectURL(url);
     };
 
+    const handleDownloadAll = () => {
+        if (questions.length === 0) return;
+        const header = 'Area,Question,Correct Answer,Option A,Option B,Option C,Option D';
+        const rows = questions.map(q => [
+            q.area ?? '',
+            q.question,
+            q.correct_option,
+            q.options[0] ?? '',
+            q.options[1] ?? '',
+            q.options[2] ?? '',
+            q.options[3] ?? ''
+        ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
+        const csv = [header, ...rows].join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', 'questions.csv');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
 
 
     const handleAddQuestion = async () => {
@@ -379,6 +403,12 @@ export default function QuestionManagementPage() {
                                     className="py-1 px-4 bg-white text-black rounded-full font-bold"
                                 >
                                     Add Question
+                                </button>
+                                <button
+                                    onClick={handleDownloadAll}
+                                    className="py-1 px-4 bg-white text-black rounded-full font-bold"
+                                >
+                                    Download Questions
                                 </button>
                             </div>
                         </div>
