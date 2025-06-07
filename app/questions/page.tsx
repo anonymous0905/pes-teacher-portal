@@ -227,20 +227,34 @@ export default function QuestionManagementPage() {
         let successCount = 0;
         let failCount = 0;
 
+        const clean = (value?: string) => value?.trim().replace(/^"+/, '').replace(/"+$/, '') ?? '';
+
         for (let i = 0; i < lines.length; i++) {
-            const [area, question, correctAnswer, optionA, optionB, optionC, optionD] = lines[i].split(',');
+            const [rawArea, rawQuestion, rawCorrect, rawA, rawB, rawC, rawD] = lines[i].split(',');
+            const area = clean(rawArea);
+            const question = clean(rawQuestion);
+            const correctAnswer = clean(rawCorrect);
+            const optionA = clean(rawA);
+            const optionB = clean(rawB);
+            const optionC = clean(rawC);
+            const optionD = clean(rawD);
+
+            // Update the add question form with the current record so the
+            // user can see which entry is being processed
+            setNewQuestionData({
+                id: '',
+                question,
+                options: [optionA, optionB, optionC, optionD],
+                correct_option: correctAnswer,
+                area
+            });
 
             const payload = {
-                question: question.trim(),
-                options: [
-                    optionA?.trim() ?? '',
-                    optionB?.trim() ?? '',
-                    optionC?.trim() ?? '',
-                    optionD?.trim() ?? ''
-                ],
-                correct_option: correctAnswer.trim(),
+                question,
+                options: [optionA, optionB, optionC, optionD],
+                correct_option: correctAnswer,
                 procedure_id: selectedProcedure.id,
-                area: area.trim()
+                area
             };
 
             const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/add-question`, {
