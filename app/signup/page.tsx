@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import Image from 'next/image'
 import vrDoctorsImg from '@/public/building-logo.png'
+import caveLogo from '@/public/cave-logo1.png'
 import { useRouter } from 'next/navigation'
 
 const schema = z.object({
@@ -68,8 +69,9 @@ export default function SignupPage() {
                     objectFit="cover"
                     className="rounded-r-none"
                 />
-                <div className="absolute top-6 left-6 text-white font-bold text-2xl tracking-wide">
-                    PESU Simulation Suite
+                <div className="absolute top-6 left-6 flex items-center text-white font-bold text-2xl tracking-wide">
+                    <Image src={caveLogo} alt="PESU logo" width={200} height={200} className="mr-2" />
+                    
                 </div>
             </div>
 
