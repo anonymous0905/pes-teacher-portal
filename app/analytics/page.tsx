@@ -1,7 +1,7 @@
 // Fully Restored UI with Sidebar, Filters, Table and Modal for Class and Student Analytics
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import ReactMarkdown from 'react-markdown'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
@@ -423,10 +423,14 @@ export default function ClassAnalyticsPage() {
 
     const [emailToSend, setEmailToSend] = useState('')
 
+    const logoBase64Ref = useRef<string | null>(null)
     const getBase64FromUrl = async (url: string) => {
+        if (logoBase64Ref.current) return logoBase64Ref.current
         const response = await fetch(url)
         const blob = await response.blob()
-        return blobToBase64(blob)
+        const base64 = await blobToBase64(blob)
+        logoBase64Ref.current = base64
+        return base64
     }
 
     const addHeaderAndPageNumbers = async (pdf: any) => {
