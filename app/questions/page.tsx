@@ -576,13 +576,12 @@ export default function QuestionManagementPage() {
                                     type="file"
                                     accept=".csv"
                                     onChange={handleCSVUpload}
-                                    className="block text-sm text-white file:mr-4 file:py-2 file:px-4 file:border-0
-                     file:text-sm file:font-semibold file:bg-white file:text-black rounded"
+                                    className="block text-sm text-white file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-semibold file:bg-black file:text-white rounded"
                                 />
                                 <button
                                     type="button"
                                     onClick={handleSampleDownload}
-                                    className="mt-2 text-blue-400 underline text-sm"
+                                    className="mt-2 px-4 py-2 bg-black text-white rounded"
                                 >
                                     Download sample CSV
                                 </button>
