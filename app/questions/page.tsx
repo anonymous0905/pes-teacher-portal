@@ -38,6 +38,7 @@ export default function QuestionManagementPage() {
     const [uploading, setUploading] = useState(false);
     const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [showDeleteSuccessModal, setShowDeleteSuccessModal] = useState(false);
 
 
     useEffect(() => {
@@ -208,6 +209,8 @@ export default function QuestionManagementPage() {
 
         setSelectedQuestions([]);
         fetchQuestions(selectedProcedure.package_name);
+        setShowDeleteSuccessModal(true);
+        setTimeout(() => setShowDeleteSuccessModal(false), 4000);
     };
 
     const handleCSVUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -628,6 +631,13 @@ export default function QuestionManagementPage() {
                     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                         <div className="bg-white text-black p-6 rounded-2xl">
                             <p className="text-lg font-semibold">Upload successful!</p>
+                        </div>
+                    </div>
+                )}
+                {showDeleteSuccessModal && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                        <div className="bg-white text-black p-6 rounded-2xl">
+                            <p className="text-lg font-semibold">Deletion successful!</p>
                         </div>
                     </div>
                 )}
