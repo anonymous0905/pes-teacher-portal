@@ -230,6 +230,21 @@ export default function QuestionManagementPage() {
         for (let i = 0; i < lines.length; i++) {
             const [area, question, correctAnswer, optionA, optionB, optionC, optionD] = lines[i].split(',');
 
+            // Update the add question form with the current record so the
+            // user can see which entry is being processed
+            setNewQuestionData({
+                id: '',
+                question: question.trim(),
+                options: [
+                    optionA?.trim() ?? '',
+                    optionB?.trim() ?? '',
+                    optionC?.trim() ?? '',
+                    optionD?.trim() ?? ''
+                ],
+                correct_option: correctAnswer.trim(),
+                area: area.trim()
+            });
+
             const payload = {
                 question: question.trim(),
                 options: [
