@@ -8,7 +8,6 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import nav from '@/public/nav-logo.png'
 import logo from '@/public/cave-logo.png'
-import pesuimsr from '@/public/pesu-imsr.png'
 //import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid, Legend } from 'recharts'
 import {
     ComposedChart,
@@ -136,7 +135,6 @@ export default function ClassAnalyticsPage() {
             } else {
                 setAiSummary('Failed to generate summary')
             }
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (err) {
             setAiSummary('Failed to generate summary')
         }
@@ -427,13 +425,12 @@ export default function ClassAnalyticsPage() {
 
     const getBase64FromUrl = async (url: string) => {
         const response = await fetch(url)
-
         const blob = await response.blob()
         return blobToBase64(blob)
     }
 
     const addHeaderAndPageNumbers = async (pdf: any) => {
-        const logoBase64 = pesuimsr
+        const logoBase64 = await getBase64FromUrl('/pesu-imsr.png')
         const pageCount = pdf.internal.getNumberOfPages()
         const pageWidth = pdf.internal.pageSize.getWidth()
         const pageHeight = pdf.internal.pageSize.getHeight()
