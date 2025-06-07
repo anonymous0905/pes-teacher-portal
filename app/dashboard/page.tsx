@@ -329,7 +329,7 @@ export default function DashboardPage() {
                                             <td>
                                                 {expired
                                                     ? logAvailability[s.session_code]
-                                                        ? <button onClick={() => handleViewLogs(s.id)} className="underline text-blue-400">View Logs</button>
+                                                        ? <button onClick={() => handleViewLogs(s.id)} className="py-1 px-3 bg-white text-black rounded-full font-bold">View Logs</button>
                                                         : <span className="text-gray-500">No logs exist</span>
                                                     : <span className="text-yellow-500">Pending</span>}
                                             </td>
