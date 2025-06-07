@@ -345,7 +345,7 @@ export default function DashboardPage() {
 
             {showModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white text-black p-6 rounded-2xl max-w-3xl w-full shadow-xl relative">
+                    <div className="bg-white text-black p-6 rounded-2xl w-full max-w-[95vw] shadow-xl relative">
                         <h3 className="text-xl font-semibold mb-4 border-b pb-2">Session Log</h3>
 
                         <div className="bg-white text-sm p-2 max-h-[400px] overflow-auto space-y-4">

@@ -444,7 +444,7 @@ export default function QuestionManagementPage() {
                 {/* Edit Modal */}
                 {editingQuestion && (
                     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                        <div className="bg-white text-black p-6 rounded-2xl w-full max-w-2xl">
+                        <div className="bg-white text-black p-6 rounded-2xl w-full max-w-[95vw]">
                             <h3 className="text-xl font-bold mb-4">Edit Question</h3>
                             <label className="block font-semibold mb-1">Question</label>
                             <input required value={editingQuestion.question} onChange={e => setEditingQuestion({ ...editingQuestion, question: e.target.value })} className="w-full p-2 mb-4 border" />
@@ -507,7 +507,7 @@ export default function QuestionManagementPage() {
                 {/* Add Modal */}
                 {showAddModal && (
                     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                        <div className="bg-white text-black p-6 rounded-2xl w-full max-w-2xl">
+                        <div className="bg-white text-black p-6 rounded-2xl w-full max-w-[95vw]">
                             <h3 className="text-xl font-bold mb-4">Add New Question</h3>
 
                             <label className="block font-semibold mb-1">Question</label>
