@@ -586,7 +586,7 @@ export default function ClassAnalyticsPage() {
             </div>
             {showModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white text-black p-6 rounded-lg max-w-4xl w-full relative">
+                    <div className="bg-white text-black p-6 rounded-lg w-full max-w-[90vw] sm:max-w-4xl relative">
                         <h3 className="text-lg font-bold mb-4">{modalTitle}</h3>
                         <div id="analytics-content" className="bg-white text-black p-4 rounded shadow max-h-[70vh] overflow-y-auto">
                             <div className="mb-4 text-sm">

@@ -346,7 +346,7 @@ export default function SessionsPage() {
 
             {modalOpen && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white text-black p-6 rounded-lg max-w-2xl w-full relative">
+                    <div className="bg-white text-black p-6 rounded-lg w-full max-w-[90vw] sm:max-w-2xl relative">
                         <button onClick={() => setModalOpen(false)} className="absolute top-2 right-2 text-gray-400 hover:text-white">✖</button>
                         <h2 className="text-xl font-semibold mb-4">Session Logs</h2>
                         <div className="bg-white text-sm p-2 max-h-[400px] overflow-auto space-y-4">
