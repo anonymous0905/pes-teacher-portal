@@ -423,6 +423,25 @@ export default function ClassAnalyticsPage() {
 
     const [emailToSend, setEmailToSend] = useState('')
 
+    const getBase64FromUrl = async (url: string) => {
+        const response = await fetch(url)
+        const blob = await response.blob()
+        return blobToBase64(blob)
+    }
+
+    const addHeaderAndPageNumbers = async (pdf: any) => {
+        const logoBase64 = await getBase64FromUrl('/pesu-imsr.png')
+        const pageCount = pdf.internal.getNumberOfPages()
+        const pageWidth = pdf.internal.pageSize.getWidth()
+        const pageHeight = pdf.internal.pageSize.getHeight()
+        pdf.setFontSize(10)
+        for (let i = 1; i <= pageCount; i++) {
+            pdf.setPage(i)
+            pdf.addImage(logoBase64, 'PNG', 10, 10, 40, 15)
+            pdf.text(`Page ${i} of ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: 'center' })
+        }
+    }
+
     const handleDownloadPDF = async () => {
         const content = document.getElementById('analytics-content');
         if (!content) return alert('Content not found');
@@ -449,8 +468,11 @@ export default function ClassAnalyticsPage() {
         };
 
         // Give charts time to fully render before capturing
-        setTimeout(() => {
-            html2pdf().set(opt).from(cloned).save();
+        setTimeout(async () => {
+            const worker = html2pdf().set(opt).from(cloned).toPdf();
+            const pdf = await worker.get('pdf');
+            await addHeaderAndPageNumbers(pdf);
+            pdf.save(opt.filename);
         }, 100);
     };
 
@@ -486,7 +508,10 @@ export default function ClassAnalyticsPage() {
 
         // Wrap PDF generation in a delay
         setTimeout(async () => {
-            const blob = await html2pdf().from(cloned).set(opt).outputPdf('blob');
+            const worker = html2pdf().from(cloned).set(opt).toPdf();
+            const pdf = await worker.get('pdf');
+            await addHeaderAndPageNumbers(pdf);
+            const blob = pdf.output('blob');
             const base64 = await blobToBase64(blob);
 
             const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/email-analytics`, {
