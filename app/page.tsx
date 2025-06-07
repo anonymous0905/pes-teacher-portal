@@ -102,7 +102,7 @@ export default function LoginPage() {
 
                 <div className="absolute top-6 left-6 flex items-center text-white font-bold text-2xl tracking-wide">
                     <Image src={caveLogo} alt="PESU logo" width={200} height={200} className="mr-2" />
-                    <span>PESU Simulation Suite</span>
+                    
                 </div>
             </div>
 
