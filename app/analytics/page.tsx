@@ -427,6 +427,7 @@ export default function ClassAnalyticsPage() {
 
     const getBase64FromUrl = async (url: string) => {
         const response = await fetch(url)
+
         const blob = await response.blob()
         return blobToBase64(blob)
     }
