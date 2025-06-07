@@ -37,6 +37,7 @@ export default function QuestionManagementPage() {
     const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null);
     const [uploading, setUploading] = useState(false);
     const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
 
 
     useEffect(() => {
@@ -274,8 +275,11 @@ export default function QuestionManagementPage() {
 
         setUploading(false);
         setUploadProgress(null);
-        alert(`Upload complete.\n✔ Success: ${successCount}\n✖ Failed: ${failCount}`);
+        setShowAddModal(false);
+        setNewQuestionData({ id: '', question: '', options: ['', '', '', ''], correct_option: '', area: '' });
         fetchQuestions(selectedProcedure.package_name);
+        setShowSuccessModal(true);
+        setTimeout(() => setShowSuccessModal(false), 4000);
     };
 
     const handleSampleDownload = () => {
@@ -620,9 +624,13 @@ export default function QuestionManagementPage() {
                         </div>
                     </div>
                 )}
-
-
-
+                {showSuccessModal && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                        <div className="bg-white text-black p-6 rounded-2xl">
+                            <p className="text-lg font-semibold">Upload successful!</p>
+                        </div>
+                    </div>
+                )}
             </main>
         </div>
     );
