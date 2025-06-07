@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import Image from 'next/image'
 import vrDoctorsImg from '@/public/login-side.png' // Replace with your actual path
+import caveLogo from '@/public/cave-logo1.png'
 import { useRouter } from 'next/navigation'
 
 
@@ -99,8 +100,9 @@ export default function LoginPage() {
                     </form>
                 </div>
 
-                <div className="absolute top-6 left-9 text-white font-bold text-2xl tracking-wide">
-                    PESU Simulation Suite
+                <div className="absolute top-6 left-6 flex items-center text-white font-bold text-2xl tracking-wide">
+                    <Image src={caveLogo} alt="PESU logo" width={40} height={40} className="mr-2" />
+                    <span>PESU Simulation Suite</span>
                 </div>
             </div>
 
