@@ -7,7 +7,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import nav from '@/public/nav-logo.png'
-import logo from '@/public/cave-logo.png'
+import logo from '@/public/cave-logo1.png'
 //import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid, Legend } from 'recharts'
 import {
     ComposedChart,
@@ -526,7 +526,7 @@ export default function ClassAnalyticsPage() {
             <div className="bg-[#1a1a1a] min-h-screen text-white flex relative">
                 <aside className="w-64 bg-black p-6 flex flex-col justify-between fixed top-0 left-0 h-full z-30">
                     <div>
-                        <Image src={logo} alt="Logo" width={80} height={80} className="mb-8" />
+                        <Image src={logo} alt="Logo" width={200} height={200} className="mb-8" />
                         <nav className="space-y-4 text-xl">
                             <button onClick={() => router.push('/dashboard')} className="text-left w-full">Dashboard</button>
                             <button onClick={() => router.push('/sessions')} className="text-left w-full">Sessions</button>

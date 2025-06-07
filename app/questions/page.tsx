@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import Image from 'next/image';
-import logo from '@/public/cave-logo.png';
+import logo from '@/public/cave-logo1.png';
 import nav from '@/public/nav-logo.png';
 import headerWave from '@/public/header-removebg-preview.png';
 
@@ -362,7 +362,7 @@ export default function QuestionManagementPage() {
         <div className="flex min-h-screen text-white bg-[#1a1a1a]">
             <Image src={nav} alt="nav" width={250} height={900} className="fixed bottom-0 left-0 z-40 pointer-events-none" />
             <aside className="w-64 bg-black p-6 fixed top-0 left-0 h-full z-30">
-                <Image src={logo} alt="Logo" width={80} height={80} className="mb-8" />
+                <Image src={logo} alt="Logo" width={200} height={200} className="mb-8" />
 
                 <nav className="space-y-4 text-xl">
                     <button onClick={() => router.push('/dashboard')} className="text-left w-full">Dashboard</button>
