@@ -4,6 +4,7 @@
 import {JSX, useEffect, useState} from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { allowedAdmins } from '@/lib/constants'
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import logo from '@/public/cave-logo1.png'
@@ -34,6 +35,7 @@ export default function DashboardPage() {
     const router = useRouter()
 
     const [teacherName, setTeacherName] = useState('')
+    const [isAdmin, setIsAdmin] = useState(false)
     const [srn, setSrn] = useState('')
     const [procedureId, setProcedureId] = useState('')
     const [mode, setMode] = useState<'practice' | 'evaluation'>('practice')
@@ -49,6 +51,7 @@ export default function DashboardPage() {
             const { data: { user }, error: userErr } = await supabase.auth.getUser()
             if (userErr || !user) { router.push('/'); return }
             setTeacherName(user.user_metadata?.name ?? 'Teacher')
+            setIsAdmin(allowedAdmins.includes(user.email ?? ''))
 
             const { data: procList } = await supabase.from('procedures').select('id, procedure_name, package_name')
             setProcedures(procList as Procedure[] ?? [])
@@ -257,6 +260,9 @@ export default function DashboardPage() {
                             <button onClick={() => router.push('/classcreate')} className="text-left w-full">Bulk Creation</button>
                             <button onClick={() => router.push('/analytics')} className="text-left w-full">Analytics</button>
                             <button onClick={() => router.push('/questions')}className="text-left w-full">Manage Questions</button>
+                            {isAdmin && (
+                                <button onClick={() => router.push('/admin')} className="text-left w-full">Admin</button>
+                            )}
                             <button onClick={() => router.push('/myaccount')} className="text-left w-full">My Account</button>
                         </nav>
                         <button onClick={handleLogout} className="text-left text-lg mt-10">Logout</button>

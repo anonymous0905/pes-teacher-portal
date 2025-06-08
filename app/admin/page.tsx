@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { allowedAdmins } from '@/lib/constants'
 import Image from 'next/image'
 import logo from '@/public/cave-logo1.png'
 import nav from '@/public/nav-logo.png'
@@ -18,7 +19,6 @@ interface Procedure {
 
 export default function AdminProceduresPage() {
   const router = useRouter()
-  const allowedAdmins = ['pes2202100762@pesu.pes.edu'] // Add more emails as needed
 
   const [authorized, setAuthorized] = useState(false)
   const [checked, setChecked] = useState(false)
