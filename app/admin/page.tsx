@@ -155,7 +155,7 @@ export default function AdminProceduresPage() {
                   <tr className="border-b border-gray-600">
                     <th className="px-4 py-2">Name</th>
                     <th className="px-4 py-2">Package</th>
-                    <th className="px-4 py-2">Accept Q</th>
+                    <th className="px-4 py-2">Accept Questions?</th>
                     <th className="px-4 py-2 w-48">Areas</th>
                     <th className="px-4 py-2"></th>
                   </tr>
