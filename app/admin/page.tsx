@@ -152,22 +152,22 @@ export default function AdminProceduresPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-gray-600">
-                  <th className="py-2">Name</th>
-                  <th>Package</th>
-                  <th>Accept Q</th>
-                  <th>Areas</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {procedures.map(p => (
-                  <tr key={p.id} className="border-b border-gray-800">
-                    <td className="py-2">{p.procedure_name}</td>
-                    <td>{p.package_name}</td>
-                    <td>{p.accept_questions ? 'Yes' : 'No'}</td>
-                    <td className="whitespace-pre-wrap">{p.areas ? JSON.stringify(p.areas) : ''}</td>
-                    <td className="space-x-2">
+                  <tr className="border-b border-gray-600">
+                    <th className="px-4 py-2">Name</th>
+                    <th className="px-4 py-2">Package</th>
+                    <th className="px-4 py-2">Accept Questions?</th>
+                    <th className="px-4 py-2 w-48">Areas</th>
+                    <th className="px-4 py-2"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {procedures.map(p => (
+                    <tr key={p.id} className="border-b border-gray-800">
+                    <td className="px-4 py-2">{p.procedure_name}</td>
+                    <td className="px-4 py-2">{p.package_name}</td>
+                    <td className="px-4 py-2">{p.accept_questions ? 'Yes' : 'No'}</td>
+                    <td className="px-4 py-2 whitespace-pre-wrap break-words w-48">{p.areas ? JSON.stringify(p.areas) : ''}</td>
+                    <td className="px-4 py-2 space-x-2">
                       <button onClick={() => handleEdit(p)} className="px-2 py-1 bg-white text-black rounded">Edit</button>
                       <button onClick={() => handleDelete(p.id)} className="px-2 py-1 bg-red-600 text-white rounded">Delete</button>
                     </td>
