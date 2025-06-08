@@ -20,6 +20,7 @@ PES Teacher Portal is a dashboard built with **Next.js 15** and **TypeScript** f
 │   ├── dashboard/      # Landing page after login
 │   ├── questions/      # Manage questions and procedures
 │   ├── sessions/       # Session list and log viewer
+│   ├── admin/          # Admin page to allow addition, edit and deletion of procedures
 │   ├── submit/         # Manual log submission
 │   └── verify/         # Verify a session code
 ├── lib/                # Reusable utilities (Supabase client)
