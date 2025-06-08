@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { allowedAdmins } from '@/lib/constants';
 import Image from 'next/image';
 import logo from '@/public/cave-logo1.png';
 import nav from '@/public/nav-logo.png';
@@ -26,6 +27,7 @@ interface Question {
 
 export default function QuestionManagementPage() {
     const router = useRouter();
+    const [isAdmin, setIsAdmin] = useState(false);
     const [teacherName, setTeacherName] = useState('');
     const [procedures, setProcedures] = useState<Procedure[]>([]);
     const [selectedProcedure, setSelectedProcedure] = useState<Procedure | null>(null);
@@ -46,6 +48,7 @@ export default function QuestionManagementPage() {
             const { data: { user }, error } = await supabase.auth.getUser();
             if (!user || error) return router.push('/');
             setTeacherName(user.user_metadata?.name ?? 'Teacher');
+            setIsAdmin(allowedAdmins.includes(user.email ?? ''));
 
             const { data } = await supabase
                 .from('procedures')
@@ -370,6 +373,9 @@ export default function QuestionManagementPage() {
                     <button onClick={() => router.push('/classcreate')} className="text-left w-full">Bulk Creation</button>
                     <button onClick={() => router.push('/analytics')} className="text-left w-full">Analytics</button>
                     <button onClick={() => router.push('/questions')}className="text-left w-full bg-gray-200 text-black rounded px-2 py-1">Manage Questions</button>
+                    {isAdmin && (
+                        <button onClick={() => router.push('/admin')} className="text-left w-full">Admin</button>
+                    )}
                     <button onClick={() => router.push('/myaccount')} className="text-left w-full">My Account</button>
                 </nav>
                 <button onClick={async () => { await supabase.auth.signOut(); router.push('/') }} className="text-left text-lg mt-10">Logout</button>
