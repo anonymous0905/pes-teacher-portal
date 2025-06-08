@@ -2,6 +2,15 @@
 
 PES Teacher Portal is a dashboard built with **Next.js 15** and **TypeScript** for managing practical sessions and analytics for students. The application relies heavily on [Supabase](https://supabase.com) for authentication, database access and several custom edge functions.
 
+## Requirements
+
+- **Node.js 18+** – required by Next.js 15 and the Supabase CLI.
+- **Supabase CLI** – used to deploy edge functions and manage secrets. Install with:
+
+  ```bash
+  npm install -g supabase
+  ```
+
 ## Project Structure
 
 ```
@@ -42,7 +51,12 @@ All pages under `app/` follow the **Next.js App Router** pattern. Any folder wit
 The `GEMINI_API_KEY` is required by `/api/ai-summary` to call Google's Gemini API for generating report summaries.
    These variables are used in `lib/supabase.ts` to create the Supabase client and are also referenced when calling Supabase edge functions from the client.
 
-3. **Supabase project**
+3. **Admin accounts**
+
+   Edit `lib/constants.ts` and add the email addresses that should have administrator
+   access to the `allowedAdmins` array.
+
+4. **Supabase project**
 
    Set up a Supabase project and apply the schema found in `Supabase Functions/SQL Schema.txt`.  The file defines all tables used by the dashboard.  You can reference `Supabase Functions/Schema Diagram.png` for a visual overview.
 
@@ -73,7 +87,7 @@ The `GEMINI_API_KEY` is required by `/api/ai-summary` to call Google's Gemini AP
 
    The `GMAIL_*` values are only needed for the email related functions but can be stored globally.  Finally, configure a scheduled task in Supabase to periodically delete expired sessions without logs as suggested at the bottom of the schema file.
 
-4. **Development server**
+5. **Development server**
 
    ```bash
    npm run dev
@@ -81,7 +95,7 @@ The `GEMINI_API_KEY` is required by `/api/ai-summary` to call Google's Gemini AP
 
    The site will be available at [http://localhost:3000](http://localhost:3000).
 
-5. **Production build**
+6. **Production build**
 
    ```bash
    npm run build
@@ -97,6 +111,7 @@ The `GEMINI_API_KEY` is required by `/api/ai-summary` to call Google's Gemini AP
 - **Session management (`app/sessions/page.tsx`)** – List all sessions and fetch logs through Supabase.
 - **Bulk creation (`app/classcreate/page.tsx`)** – Create multiple sessions and immediately email each code.
 - **Questions (`app/questions/page.tsx`)** – Manage procedure questions and add new ones.
+- **Admin (`app/admin/page.tsx`)** – CRUD interface for procedures. Accessible only to emails listed in `allowedAdmins` within `lib/constants.ts`.
 
 All of these pages communicate with Supabase tables or edge functions by fetching `${NEXT_PUBLIC_SUPABASE_URL}/functions/v1/<function>` and passing the user’s JWT token obtained from `supabase.auth.getSession()`.
 
