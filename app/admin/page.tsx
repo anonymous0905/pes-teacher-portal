@@ -17,6 +17,12 @@ interface Procedure {
   areas: any
 }
 
+interface PortalUser {
+  id: string
+  email: string
+  user_metadata?: { name?: string }
+}
+
 export default function AdminProceduresPage() {
   const router = useRouter()
 
@@ -31,6 +37,7 @@ export default function AdminProceduresPage() {
     accept_questions: false,
     areas: ''
   })
+  const [users, setUsers] = useState<PortalUser[]>([])
 
   useEffect(() => {
     ;(async () => {
@@ -55,6 +62,16 @@ export default function AdminProceduresPage() {
       setProcedures(mapped)
     }
     fetchProcedures()
+  }, [authorized])
+
+  useEffect(() => {
+    if (!authorized) return
+    const fetchUsers = async () => {
+      const res = await fetch('/api/admin-users')
+      const d = await res.json()
+      setUsers(d.users || [])
+    }
+    fetchUsers()
   }, [authorized])
 
   const resetForm = () => {
@@ -108,6 +125,18 @@ export default function AdminProceduresPage() {
     if (error) return alert('Error: ' + error.message)
     setProcedures(procedures.filter(p => p.id !== id))
     if (editing && editing.id === id) resetForm()
+  }
+
+  const performUserAction = async (id: string, email: string, action: string) => {
+    const res = await fetch('/api/admin-users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, id, email })
+    })
+    const d = await res.json()
+    if (!res.ok) return alert(d.error || 'Action failed')
+    const list = await fetch('/api/admin-users').then(r => r.json())
+    setUsers(list.users || [])
   }
 
   if (!checked) return <div className="p-10 text-white">Loading...</div>
@@ -170,6 +199,34 @@ export default function AdminProceduresPage() {
                     <td className="px-4 py-2 space-x-2">
                       <button onClick={() => handleEdit(p)} className="px-2 py-1 bg-white text-black rounded">Edit</button>
                       <button onClick={() => handleDelete(p.id)} className="px-2 py-1 bg-red-600 text-white rounded">Delete</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+        <section className="bg-[#2a2a2a] p-6 rounded-2xl">
+          <h3 className="text-2xl font-bold mb-4">Manage Users</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-gray-600">
+                  <th className="px-4 py-2">Email</th>
+                  <th className="px-4 py-2">Name</th>
+                  <th className="px-4 py-2"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.map(u => (
+                  <tr key={u.id} className="border-b border-gray-800">
+                    <td className="px-4 py-2">{u.email}</td>
+                    <td className="px-4 py-2">{u.user_metadata?.name || ''}</td>
+                    <td className="px-4 py-2 space-x-2">
+                      <button onClick={() => performUserAction(u.id, u.email, 'ban')} className="px-2 py-1 bg-red-600 rounded">Ban</button>
+                      <button onClick={() => performUserAction(u.id, u.email, 'unban')} className="px-2 py-1 bg-yellow-600 rounded">Unban</button>
+                      <button onClick={() => performUserAction(u.id, u.email, 'resetPassword')} className="px-2 py-1 bg-white text-black rounded">Reset</button>
+                      <button onClick={() => { if (confirm('Delete user?')) performUserAction(u.id, u.email, 'delete') }} className="px-2 py-1 bg-gray-700 rounded">Delete</button>
                     </td>
                   </tr>
                 ))}
