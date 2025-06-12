@@ -13,6 +13,7 @@ import nav from '@/public/nav-logo.png'
 import headerWave from '@/public/header-removebg-preview.png'
 
 const LineChart = dynamic(() => import('./LineChart'), { ssr: false })
+const AttendanceChart = dynamic(() => import('./AttendanceChart'), { ssr: false })
 
 interface Procedure {
     id: string
@@ -30,6 +31,10 @@ interface SessionWithProcedure {
     procedures: { procedure_name: string; package_name: string }
 }
 interface LogRow { result: any }
+interface LoginInfo {
+    email: string | null
+    last_sign_in_at: string | null
+}
 
 export default function DashboardPage() {
     const router = useRouter()
@@ -45,6 +50,7 @@ export default function DashboardPage() {
     const [status, setStatus] = useState('')
     const [showModal, setShowModal] = useState(false)
     const [selectedLog, setSelectedLog] = useState<LogRow | null>(null)
+    const [recentLogins, setRecentLogins] = useState<LoginInfo[]>([])
 
     useEffect(() => {
         (async () => {
@@ -83,6 +89,16 @@ export default function DashboardPage() {
                 logs[s.session_code] = !!row
             }
             setLogAvailability(logs)
+
+            try {
+                const res = await fetch('/api/recent-logins')
+                if (res.ok) {
+                    const json = await res.json()
+                    setRecentLogins(json.users)
+                }
+            } catch (err) {
+                console.error('Failed to fetch recent logins', err)
+            }
         })()
     }, [router])
 
@@ -302,6 +318,27 @@ export default function DashboardPage() {
                                     <LineChart />
                                 </div>
                             </div>
+                        </section>
+                    </div>
+
+                    <div className="flex gap-10">
+                        <section className="bg-[#3a3a3a] p-6 rounded-2xl w-1/2 relative">
+                            <h3 className="text-2xl font-bold mb-4">Attendance</h3>
+                            <div className="h-48 rounded overflow-hidden">
+                                <AttendanceChart />
+                            </div>
+                        </section>
+
+                        <section className="bg-[#2a2a2a] p-6 rounded-2xl w-1/2">
+                            <h3 className="text-2xl font-bold mb-4">Recent Logins</h3>
+                            <ul className="space-y-2 text-sm">
+                                {recentLogins.map((l, idx) => (
+                                    <li key={idx} className="flex justify-between border-b border-gray-700 pb-1">
+                                        <span>{l.email ?? 'Unknown'}</span>
+                                        <span>{l.last_sign_in_at ? new Date(l.last_sign_in_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) : '-'}</span>
+                                    </li>
+                                ))}
+                            </ul>
                         </section>
                     </div>
 
